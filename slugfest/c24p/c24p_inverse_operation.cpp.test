@@ -1,0 +1,129 @@
+
+///////////////////////////////////////////////////////////////////////////////
+// Test about Inverse operation
+
+
+// => Count = 93 WITHOUT inverse operation
+void test_inverse_operation1()
+{
+	expr n1, n2, n3, n4;
+
+	expr add1(&n3, &n4, multi);
+	expr add2(&n2, &add1, plus);
+	expr mul(&n1, &add2, multi);
+
+	int count = 0;
+
+	for (int i = 1; i <= 13; ++i)
+	{
+		for (int j = 1; j <= 13; j++)
+		{
+			for (int k = 1; k <= 13; ++k)
+			{
+				for (int l = 1; l <= 13; ++l)
+				{
+					n1.value(i);
+					n2.value(j);
+					n3.value(k);
+					n4.value(l);
+
+					double r;
+					if (mul.calc(r))
+					{
+						if (FEQU(r, 24.0))
+							count++;
+					}
+				}
+			}
+		}
+	}
+
+	printf("Count = %d \n", count);
+}
+
+// => Count = 93, WITH inverse operation
+void test_inverse_operation2()
+{
+	expr n1, n2, n3, n4;
+
+	expr add1(&n3, &n4, multi);
+	expr add2(&n2, &add1, plus);
+	expr mul(&n1, &add2, multi);
+
+	int count = 0;
+	//for (int i = 1; i <= 13; ++i)
+	//{
+		for (int j = 1; j <= 13; j++)
+		{
+			for (int k = 1; k <= 13; ++k)
+			{
+				for (int l = 1; l <= 13; ++l)
+				{
+
+					// n1.value(i);	// Not set i to n1, n1 is the x.
+					n2.value(j);
+					n3.value(k);
+					n4.value(l);
+
+					if (calc_to(&mul, &n1, 24.0))
+					{
+						if (VALIDR(n1.value(), 1, 13))
+						{
+							count++;
+						}
+					}
+				}
+			}
+		}
+	//}	// for loop i
+
+	printf("Count = %d \n", count);
+}
+
+// => Count = 80, WITH inverse operation
+void test_inverse_operation3()
+{
+	expr n1, n2, n3, n4;
+
+	expr add1(&n1, &n2, plus);
+	expr add2(&n3, &n4, plus);
+	expr mul(&add1, &add2, multi);
+
+	int ji = 1;
+	int count = 0;
+	for (int i = 1; i <= 13; ++i)
+	{
+		for (int j = 1; j <= 13; j++)
+		{
+			for (int k = 1; k <= 13; ++k)
+			{
+				//for (int l = 1; l <= 13; ++l)
+				//{
+
+					n1.value(i);
+					n2.value(j);
+					n3.value(k);
+					//n4.value(l);
+
+					if (calc_to(&mul, &n4, 24.0))
+					{
+						if (VALIDR(n4.value(), 1, 13))
+						{
+							int x = n4.value();
+							ji = x;
+							count++;
+							printf("(%d + %d) * (%d + %d)\n", i, j, k, (int)n4.value());
+						}
+					}
+					
+
+
+				//}
+			}
+		}
+	}
+
+	printf("Count = %d \n", count);
+
+	return 0;
+}

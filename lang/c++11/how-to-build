@@ -1,0 +1,1 @@
+clang++ virtual.cpp -std=c++11

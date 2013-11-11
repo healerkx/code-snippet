@@ -1,0 +1,19 @@
+	
+void test_loop_base_on()
+{
+	context_loop cl;
+	cl.init("123");
+	cl.set_ends(4);
+	int count = 1;
+	cl.starts_base_on(1, 0);
+	// cl.starts_base_on(2, 1);
+	cl.starts_base_on(3, 2);
+	while (cl.move())
+	{
+		int a = cl[0];
+		int b = cl[1];
+		int c = cl[2];
+		int d = cl[3];
+		printf("%d\t%d %d %d %d\n", count++, a, b, c, d);
+	}
+}
