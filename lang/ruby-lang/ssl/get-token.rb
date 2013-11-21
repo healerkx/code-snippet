@@ -13,8 +13,8 @@ json = <<JSON_FOR_TOKEN
 {
 	"appsrc": "iosasdkdemo1",
     "appsrcv": "0.1",
-    "login": "yuzhongmin",
-    "passwd": "abcd1234A",
+    "login": "yqa_idman54",
+    "passwd": "mengxun456",
     "signals":  {
         "devstate": "AQAAAAAAAAAAQAE4Ag--",
         "mac": "ZXhyhATIvjB_MQPbgeJ1PLOywebfJMRTjjLPdt5H.Ek-",
@@ -37,6 +37,11 @@ JSON_FOR_TOKEN
 
 	resp_body = JSON.parse(res.body)
 	token = resp_body['token']
+	if (token)
+		return token
+	else
+		p resp_body
+	end
 end
 
 #####################################################################################################################
@@ -78,9 +83,14 @@ https.use_ssl=true
 https.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 token = get_token(https, URI.parse('https://login.yahoo.com/auth/1.0/token'))
-puts "Token: " + token
+puts "Token: #{token}"
+token = get_token(https, URI.parse('https://login.yahoo.com/auth/1.0/token'))
+puts "Token: #{token}"
 
-body, set_cookie = get_cookies(https, URI.parse('https://login.yahoo.com/auth/1.0/login'), token)
-puts body
 
-cookies = JSON.parse(body)['cookies']
+if (token)
+	body, set_cookie = get_cookies(https, URI.parse('https://login.yahoo.com/auth/1.0/login'), token)
+	puts body
+
+	cookies = JSON.parse(body)['cookies']
+end
