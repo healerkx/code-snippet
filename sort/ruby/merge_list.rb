@@ -1,13 +1,12 @@
 
 
 class Node
-
 	def initialize(value)
 		self.value = value
 	end
 
 	def to_s
-		self.value
+		"{self.value}"
 	end
 
 	attr_accessor :next, :value
@@ -15,17 +14,11 @@ end
 
 def to_list(array)
 	len = array.length
-	last = nil
-	first = nil
-	i = 0
+	first = last = Node.new(array[0])
+	i = 1
 	while (i < len)
 		n = Node.new(array[i])
-		if (!first)
-			first = n
-		end
-		if (last)
-			last.next = n
-		end
+		last.next = n
 		last = n
 		i += 1
 	end
