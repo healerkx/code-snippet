@@ -6,8 +6,8 @@ import (
 
 	"html/template"
     "net/http"
-    //"appengine"
-    //"appengine/datastore"
+    "appengine"
+    "appengine/datastore"
     //"appengine/user"
 )
 
@@ -52,5 +52,24 @@ func addnew(w http.ResponseWriter, r *http.Request) {
 }
 
 func add(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Add entry")
+    c := appengine.NewContext(r)
+    e := Entry{
+        Name:   r.FormValue("name"),
+        Date:   time.Now(),
+    }
+    key := datastore.NewKey(c, "Entry", "default_entry", 0, nil)
+    key = datastore.NewIncompleteKey(c, "Entry", key)
+    _, err := datastore.Put(c, key, &e)
+    if err != nil {
+        fmt.Fprint(w, key)
+    }
+	
 }
+
+
+
+
+
+
+
+
