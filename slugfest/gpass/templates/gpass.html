@@ -1,0 +1,127 @@
+<html>
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/md5.js"></script>		
+		<script src="static/rc4.js" type="text/javascript"></script>
+
+		<script type="text/javascript">
+
+			// handle encrypt and post form
+			function checkKey(key) {
+				if (key.length < 6) return false;
+				var md5 = CryptoJS.MD5(key).toString()
+				if (md5.charAt(0) != '0' && md5.charAt(12) != '1' && md5.charAt(18) != '2') {
+					alert('Wrong KEY!');
+					return false
+				}
+				return true;
+			}
+
+
+			function handleFormPost() {
+				var form = $("[name='new-entry']");
+				if (form.length > 0)
+				{
+					// Check KEY
+					var key = $("#key").val();
+					if (!checkKey(key))
+						return false;
+
+					
+					var name = form.find("[name='name']").val();
+					var value = form.find("[name='value']").val();		
+					var comment = form.find("[name='comment']").val();
+					try
+					{
+						var nameEncoded = encodeURIComponent(name);
+						var commentEncoded = encodeURIComponent(comment);
+						
+						encrypted = CryptoJS.RC4.encrypt(value, key);
+						var valueEncrypted = encrypted.toString();
+					}
+					catch(e)
+					{
+						console.debug(e);
+						return false;
+					}
+
+					var entry = {'name': nameEncoded, 'value': valueEncrypted, 'comment': commentEncoded};
+
+					$.ajax({
+				        url: '/add',
+				        type: 'post',
+				        data: entry,
+				    }).done(function(data){
+				    	console.debug(data);
+				    });
+				}
+
+			    return false;
+			}
+
+			// Handle show decrypted value
+			$(function(){
+
+				$('table .name').each(function(){
+					var text = $(this).text();
+					$(this).text(decodeURIComponent(text))
+				});
+				$('table .comment').each(function(){
+					var text = $(this).text();
+					$(this).text(decodeURIComponent(text))
+				});				
+
+
+				$("table button").click(function (e) {
+
+					var c = $( this ).parent().find("input");
+
+					if (c[0].style.display == '') {
+						c[0].style.display = 'none';
+					} else {
+						c[0].style.display = '';
+						var key = $("#key").val();
+						if (!checkKey(key))
+							return false;
+						decrypted = CryptoJS.RC4.decrypt(c.val(), key);
+						var value = decrypted.toString(CryptoJS.enc.Utf8);
+
+						alert(value);
+					}
+					
+					return;
+				});
+
+			});			
+
+			
+		</script>
+	</head>
+
+	<body>
+		
+		<div><a href='{{.logoutUrl}}'>Logout</a> {{.email}}</div>
+		<div style='width:100px'>KEY:</div>
+		<input id='key' type='password' id='key'></input>
+		<br>
+		<form name="new-entry" onSubmit="return handleFormPost()">
+		 	<div><div style='width:100px'>Name:</div><input type="text" name="name" /></div>
+		 	<div><div style='width:100px'>Value:</div><input type="text" name="value" /><div>
+		  	<div><div style='width:100px'>Comment:</div><input type="text" name="comment" /><div>
+		  	<input type="submit" value="Add" />
+		</form>
+				
+		<table border='1'>
+			{{range .items}}
+				<tr class='entry'>
+					<td class='name'>{{.Name}}</td>
+					<td class='comment'>{{.Comment}}</td>
+					<td>
+						<input value='{{.Value}}' style='display:none'></input>
+						<button onclick='return false'>show</button>
+					</td>
+				</tr>
+			{{end}}
+		</table>
+	</body>
+</html>
