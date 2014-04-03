@@ -18,9 +18,17 @@ type Entry struct {
     Date 		time.Time
 }
 
+type Item struct {
+    Name        string
+    Value       string
+    Comment     string
+    DelId       string
+}
+
 func init() {
     http.HandleFunc("/h", handler)
-    http.HandleFunc("/add", add)    
+    http.HandleFunc("/add", add)
+    http.HandleFunc("/del", del)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +54,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
     query := datastore.NewQuery("Entry")
     var entries []Entry
-    _, qe := query.GetAll(c, &entries)
+    keys, qe := query.GetAll(c, &entries)
 
     if qe == nil {
+        items := []Item{}
+        for idx, entry := range entries {
+            key := keys[idx]
+            item := Item{entry.Name, entry.Value, entry.Comment, key.String() }
+
+            items = append(items, item)  
+        }
+
+
         vars := map[string]interface{} {
             "email": u.Email,
-            "items": entries,
+            "items": items,
             "logoutUrl": logoutUrl,
         }
 
@@ -81,6 +98,30 @@ func add(w http.ResponseWriter, r *http.Request) {
 	
 }
 
+func del(w http.ResponseWriter, r *http.Request) {
+    c := appengine.NewContext(r)
+
+    delId := r.FormValue("DelId")
+    
+    query := datastore.NewQuery("Entry")
+    var entries []Entry
+    keys, qe := query.GetAll(c, &entries)
+
+    if qe == nil {
+        for idx, _ := range entries {
+            key := keys[idx]
+            
+            if (key.String() == delId) {
+                err := datastore.Delete(c, key)
+                if err != nil {
+
+                }
+                break
+            }
+        }
+    }
+    
+}
 
 
 

@@ -72,7 +72,7 @@
 				});				
 
 
-				$("table button").click(function (e) {
+				$("table button.show").click(function (e) {
 
 					var c = $( this ).parent().find("input");
 
@@ -92,6 +92,19 @@
 					return;
 				});
 
+
+				$("table button.delete").click(function (e) {
+
+					var delId = $(this).attr('delId');
+					var entryToDel = {'DelId': delId };
+					$.ajax({
+				        url: '/del',
+				        type: 'post',
+				        data: entryToDel,
+				    }).done(function(data){
+				    	console.debug(data);
+				    });
+				});
 			});			
 
 			
@@ -110,7 +123,7 @@
 		  	<div><div style='width:100px'>Comment:</div><input type="text" autocomplete="off" name="comment" /><div>
 		  	<input type="submit" value="Add" />
 		</form>
-				
+		<input id='itag'></input>	
 		<table border='1'>
 			{{range .items}}
 				<tr class='entry'>
@@ -118,8 +131,11 @@
 					<td class='comment'>{{.Comment}}</td>
 					<td>
 						<input value='{{.Value}}' style='display:none'></input>
-						<button onclick='return false'>show</button>
+						<button class='show' onclick='return false'>Show</button>
 					</td>
+					<td>
+						<button class='delete' delId='{{.DelId}}' onclick='return false'>Delete</button>
+					</td>					
 				</tr>
 			{{end}}
 		</table>
