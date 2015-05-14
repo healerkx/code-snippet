@@ -46,7 +46,7 @@ void printList(ListNode *head)
     ListNode* p = head;
     while (p)
     {
-        cout<<p->val<<" ";
+        cout<< p->val<< " ";
         p = p->next;
     }
     cout<<endl;
