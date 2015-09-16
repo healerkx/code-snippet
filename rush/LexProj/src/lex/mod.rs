@@ -5,7 +5,7 @@ mod number;
 
 pub fn test() {
 	println!("Hello, world!");
-	lexstate::llex();
+	lexstate::lex("==");
 	number::is_valid_number();
 }
 
