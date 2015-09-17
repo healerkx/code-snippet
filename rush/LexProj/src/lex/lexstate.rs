@@ -27,7 +27,6 @@ impl LexState {
 
 	fn next_is(&self, c: char) -> bool {
 		if let Some(x) = self.peek() {
-			println!("2{:?}", x);
 			return x == c;
 		} else {
 			false
@@ -66,11 +65,11 @@ impl LexState {
 			Some(self.content[self.current + 1])
 		}
 	}
-	/*
+	
 	fn back(&mut self) {
 		self.current -= 1
 	}
-	*/
+	
 }
 
 #[inline(always)]
@@ -81,6 +80,19 @@ fn inc_line_number(ls: &mut LexState) {
 #[inline(always)]
 fn skip(ls: &mut LexState) {
 	ls.move_next();
+}
+
+fn read_sym(ls: &mut LexState) -> String {
+	let mut sym = String::new();
+	//ls.move_next();
+	while let Some(c) = ls.current() {
+		match c {
+			'_' | 'a'...'z' | 'A'...'Z' | '0'...'9' => { sym.push(c); }
+			_ => {break}
+		}
+		ls.move_next();
+	}
+	sym
 }
 
 fn read_comment(ls: &mut LexState) -> String {
@@ -120,10 +132,24 @@ pub fn lex(s: &str) {
 
 			// White spaces
 			' ' | '\t' => { } // Rust NOT support \f \v
-
+			';' => {}
+			',' => {}
 			// String Literal
 			'"' => {}
 			'\'' => {}
+			//
+			'[' | ']' | '(' | ')' | '{' | '}' => {
+
+			}
+
+			':' => {
+				if ls.next_is(':') {
+					ls.move_next();
+					println!("{:?}", "::");
+				} else {
+					
+				}
+			}
 
 			'=' => {
 				if ls.next_is('=') {
@@ -154,6 +180,10 @@ pub fn lex(s: &str) {
 				} else {
 					
 				}
+			}
+
+			'_' | 'a'...'z' | 'A'...'Z' => {
+				println!("Sym={:?}", read_sym(&mut ls));
 			}
 
 			// Number
