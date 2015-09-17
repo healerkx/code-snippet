@@ -27,6 +27,7 @@ impl LexState {
 
 	fn next_is(&self, c: char) -> bool {
 		if let Some(x) = self.peek() {
+			println!("2{:?}", x);
 			return x == c;
 		} else {
 			false
@@ -82,6 +83,33 @@ fn skip(ls: &mut LexState) {
 	ls.move_next();
 }
 
+fn read_comment(ls: &mut LexState) -> String {
+	let mut comment = String::new();
+	ls.move_next();
+	while let Some(c) = ls.current() {
+		if c == '\n' {
+			break;
+		}
+		comment.push(c);
+		ls.move_next();
+	}
+	comment
+}
+
+fn read_comment2(ls: &mut LexState) -> String {
+	let mut comment = String::new();
+	ls.move_next();
+	while let Some(c) = ls.current() {
+		if c == '*' && ls.peek() == Some('/') {
+			break;
+		}
+		comment.push(c);
+		ls.move_next();
+	}
+	comment
+}
+
+
 pub fn lex(s: &str) {
 	let mut ls = LexState::new(s);
 
@@ -91,8 +119,9 @@ pub fn lex(s: &str) {
 			'\n' | '\r' => { inc_line_number(&mut ls) }
 
 			// White spaces
-			' ' | '\t' => { skip(&mut ls) } // Rust NOT support \f \v
+			' ' | '\t' => { } // Rust NOT support \f \v
 
+			// String Literal
 			'"' => {}
 			'\'' => {}
 
@@ -105,7 +134,20 @@ pub fn lex(s: &str) {
 				}
 			}
 
-			'+' | '-' | '*' | '/' => {
+			'#' => { println!("comment={:?}", read_comment(&mut ls)) }
+			//------------------------------------
+			'/' => {
+				if ls.next_is('*') { /* comment */
+					ls.move_next();
+					println!("comment={:?}", read_comment2(&mut ls))
+				} else if ls.next_is('=') {	// a/=3
+					ls.move_next();
+				} else {	// 2/3
+				}
+
+			}
+
+			'+' | '-' | '*' => {
 				if ls.next_is_any(&['=']) {
 					ls.move_next();
 					println!("{:?}", "+=");
@@ -113,6 +155,10 @@ pub fn lex(s: &str) {
 					
 				}
 			}
+
+			// Number
+
+			// Symbol
 
 			_ => {
 				println!("Not handled{:?}", c);
