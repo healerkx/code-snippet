@@ -116,6 +116,30 @@ fn read_sym(ls: &mut LexState) -> String {
 	sym
 }
 
+fn read_str(ls: &mut LexState, end: char) -> String {
+	let mut ret = String::new();
+	while let Some(c) = ls.current() {
+		if c == '\\' {
+			if let Some(n) = ls.peek() {
+				if n == end {
+					ret.push(n);
+					ls.move_next();
+				}
+			}
+		} else if (c == '"' && end == '"') {
+			break;
+		} else if (c == '\'' && end == '\'') {
+			break;
+		} else {
+			ret.push(c)
+		}
+
+		ls.move_next();
+	}
+
+	ret
+}
+
 fn read_comment(ls: &mut LexState) -> String {
 	let mut comment = String::new();
 	ls.move_next();
@@ -187,8 +211,14 @@ pub fn lex(s: &str) {
 			';' => {}
 			',' => {}
 			// String Literal
-			'"' => {}
-			'\'' => {}
+			'"' => {
+				ls.move_next();
+				println!("String1={:?}", read_str(&mut ls, '"'));
+			}
+			'\'' => {
+				ls.move_next();
+				println!("String2={:?}", read_str(&mut ls, '\''));
+			}
 			//
 			'[' | ']' | '(' | ')' | '{' | '}' => {
 
