@@ -37,6 +37,7 @@ pub fn read_hex_number(ls: &mut LexState) -> Option<String> {
 pub fn read_number(ls: &mut LexState) -> Option<String> {
 	let mut f = false;
 	let mut number = read_int(ls);
+
 	if let Some(d) = ls.current() {
 		if d == '.' {
 			number.push('.');
@@ -71,9 +72,6 @@ pub fn read_number(ls: &mut LexState) -> Option<String> {
 					_ => { return None }
 				}
 			}
-		}
-		else {
-			return None
 		}
 	}
 

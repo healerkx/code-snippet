@@ -22,6 +22,10 @@ impl LexState {
 		self.content.len()
 	}
 
+	fn at_line_begin(&self) -> bool {
+		self.curcolumn == 1
+	}
+
 	pub fn move_next(&mut self) -> bool {
 		self.current += 1;
 		self.curcolumn += 1;
@@ -79,6 +83,10 @@ impl LexState {
 	pub fn back(&mut self) {
 		self.current -= 1;
 		self.curcolumn -= 1;
+	}
+
+	fn is_python_indent_on(&self) -> bool {
+		true
 	}
 	
 }
@@ -139,6 +147,25 @@ fn read_comment2(ls: &mut LexState) -> String {
 	comment
 }
 
+fn read_indents(ls: &mut LexState) -> Option<usize> {
+	let mut i = 0;
+	
+	while let Some(s) = ls.current() {
+		match s {
+			' ' => { i += 1 }
+			'\t' => { return None }
+			_ => { ls.back(); break; }
+		}
+		ls.move_next();
+	}
+	if i % 4 == 0 {
+		Some(i / 4)
+	} else {
+		None
+	}
+
+}
+
 
 pub fn lex(s: &str) {
 	let mut ls = LexState::new(s);
@@ -150,7 +177,13 @@ pub fn lex(s: &str) {
 			'\n' | '\r' => { inc_line_number(&mut ls) }
 
 			// White spaces
-			' ' | '\t' => { } // Rust NOT support \f \v
+			' ' | '\t' => {
+				if ls.at_line_begin() {
+					if ls.is_python_indent_on() {
+						println!("Indent={:?}", read_indents(&mut ls));
+					}
+				}
+			} // Rust NOT support \f \v
 			';' => {}
 			',' => {}
 			// String Literal
@@ -173,7 +206,7 @@ pub fn lex(s: &str) {
 			'=' => {
 				if ls.next_is('=') {
 					ls.move_next();
-					println!("{:?}", "==");
+					
 				} else {
 					
 				}
