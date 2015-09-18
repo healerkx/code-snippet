@@ -5,6 +5,7 @@ pub struct LexState {
     content: Vec<char>,
     current: usize,
     curline: usize,
+    curcolumn: usize
 }
 
 impl LexState {
@@ -12,7 +13,8 @@ impl LexState {
 		LexState {
 			content: s.chars().collect::<Vec<char>>(),
 			current: 0,
-			curline: 1
+			curline: 1,
+			curcolumn: 0
 		}
 	}
 
@@ -20,8 +22,15 @@ impl LexState {
 		self.content.len()
 	}
 
-	fn move_next(&mut self) -> bool {
+	pub fn move_next(&mut self) -> bool {
 		self.current += 1;
+		self.curcolumn += 1;
+		self.current < self.len()
+	}
+
+	pub fn move_on(&mut self, step: usize) -> bool {
+		self.current += step;
+		self.curcolumn += step;
 		self.current < self.len()
 	}
 
@@ -45,8 +54,8 @@ impl LexState {
 	}
 
 	#[inline(always)]
-	fn current(&self) -> Option<char> {
-		if self.current>= self.len() {
+	pub fn current(&self) -> Option<char> {
+		if self.current >= self.len() {
 			None
 		} else {
 			Some(self.current_char())
@@ -54,7 +63,7 @@ impl LexState {
 	}
 
 	#[inline(always)]
-	fn current_char(&self) -> char {
+	pub fn current_char(&self) -> char {
 		self.content[self.current]
 	}	
 
@@ -65,16 +74,20 @@ impl LexState {
 			Some(self.content[self.current + 1])
 		}
 	}
-	
-	fn back(&mut self) {
-		self.current -= 1
+
+	#[warn(dead_code)] 
+	pub fn back(&mut self) {
+		self.current -= 1;
+		self.curcolumn -= 1;
 	}
 	
 }
 
 #[inline(always)]
 fn inc_line_number(ls: &mut LexState) {
+	println!("Line from {:?}:{:?} changed", ls.curline, ls.curcolumn);
 	ls.curline += 1;
+	ls.curcolumn = 0;
 }
 
 #[inline(always)]
@@ -88,7 +101,7 @@ fn read_sym(ls: &mut LexState) -> String {
 	while let Some(c) = ls.current() {
 		match c {
 			'_' | 'a'...'z' | 'A'...'Z' | '0'...'9' => { sym.push(c); }
-			_ => {break}
+			_ => { ls.back(); break}
 		}
 		ls.move_next();
 	}
@@ -100,6 +113,7 @@ fn read_comment(ls: &mut LexState) -> String {
 	ls.move_next();
 	while let Some(c) = ls.current() {
 		if c == '\n' {
+			ls.back();
 			break;
 		}
 		comment.push(c);
@@ -113,8 +127,12 @@ fn read_comment2(ls: &mut LexState) -> String {
 	ls.move_next();
 	while let Some(c) = ls.current() {
 		if c == '*' && ls.peek() == Some('/') {
+			ls.move_next();
 			break;
+		} else if c == '\n' {
+			inc_line_number(ls);
 		}
+
 		comment.push(c);
 		ls.move_next();
 	}
@@ -126,6 +144,7 @@ pub fn lex(s: &str) {
 	let mut ls = LexState::new(s);
 
 	while let Some(c) = ls.current() {
+		// println!("CHAR={:?}", c);
 		match c {
 			// New Line
 			'\n' | '\r' => { inc_line_number(&mut ls) }
@@ -170,7 +189,6 @@ pub fn lex(s: &str) {
 					ls.move_next();
 				} else {	// 2/3
 				}
-
 			}
 
 			'+' | '-' | '*' => {
@@ -178,7 +196,7 @@ pub fn lex(s: &str) {
 					ls.move_next();
 					println!("{:?}", "+=");
 				} else {
-					
+					println!("OP{:?}", c);
 				}
 			}
 
@@ -187,6 +205,16 @@ pub fn lex(s: &str) {
 			}
 
 			// Number
+			'.' | '0'...'9' => {
+				if c == '0' && ls.peek() == Some('x') {
+					ls.move_on(2);
+					println!("Hex Number={:?}", lex::number::read_hex_number(&mut ls));
+					ls.back();
+				} else {
+					println!("Number={:?}", lex::number::read_number(&mut ls));
+					ls.back();
+				}
+			}
 
 			// Symbol
 
@@ -197,8 +225,4 @@ pub fn lex(s: &str) {
 		
 		ls.move_next();
 	}
-}
-
-pub fn llex() {
-	println!("{:?}", lex::number::is_valid_number());
 }
