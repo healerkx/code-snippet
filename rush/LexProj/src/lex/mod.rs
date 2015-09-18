@@ -8,6 +8,7 @@ pub fn test() {
 	lexstate::lex("if c==2 : #ddd
     a, b = \"hello\", 'world'/*ddd
 aaa*/
+	'''abcde'''
     if a == c:
         print(3)
     b = 3");

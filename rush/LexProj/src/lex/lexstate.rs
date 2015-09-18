@@ -27,12 +27,11 @@ impl LexState {
 	}
 
 	pub fn move_next(&mut self) -> bool {
-		self.current += 1;
-		self.curcolumn += 1;
-		self.current < self.len()
+		self.move_over(1)
 	}
 
-	pub fn move_on(&mut self, step: usize) -> bool {
+	#[inline(always)]
+	pub fn move_over(&mut self, step: usize) -> bool {
 		self.current += step;
 		self.curcolumn += step;
 		self.current < self.len()
@@ -44,6 +43,17 @@ impl LexState {
 		} else {
 			false
 		}
+	}
+
+	fn next_two_is(&self, c1: char, c2: char) -> bool {
+		if let Some(x) = self.peek() {
+			if x == c1 {
+				if let Some(y) = self.peek_over(2) {
+					return y == c2
+				}
+			}
+		}
+		false
 	}
 
 	fn next_is_any(&self, cs: &[char]) -> bool {
@@ -72,10 +82,15 @@ impl LexState {
 	}	
 
 	fn peek(&self) -> Option<char> {
-		if self.current + 1 >= self.len() {
+		self.peek_over(1)
+	}
+
+	#[inline(always)]
+	fn peek_over(&self, a: usize) -> Option<char> {
+		if self.current + a >= self.len() {
 			None
 		} else {
-			Some(self.content[self.current + 1])
+			Some(self.content[self.current + a])
 		}
 	}
 
@@ -84,11 +99,13 @@ impl LexState {
 		self.current -= 1;
 		self.curcolumn -= 1;
 	}
+}
 
+// For Python
+impl LexState {
 	fn is_python_indent_on(&self) -> bool {
 		true
 	}
-	
 }
 
 #[inline(always)]
@@ -137,6 +154,22 @@ fn read_str(ls: &mut LexState, end: char) -> String {
 		ls.move_next();
 	}
 
+	ret
+}
+
+fn read_triquote_str(ls: &mut LexState, end: char) -> String {
+	let mut ret = String::new();
+	while let Some(c) = ls.current() {
+		if c == end && ls.next_two_is(end, end) {
+			ls.move_over(2);
+			break;
+		} else {
+			ret.push(c)
+		}
+
+		ls.move_next();
+	}
+	
 	ret
 }
 
@@ -212,12 +245,23 @@ pub fn lex(s: &str) {
 			',' => {}
 			// String Literal
 			'"' => {
-				ls.move_next();
-				println!("String1={:?}", read_str(&mut ls, '"'));
+				if ls.next_two_is('"', '"') {
+					ls.move_over(3);
+					println!("3QuoStr->{:?}", read_triquote_str(&mut ls, '"'));
+				} else {
+					ls.move_next();
+					println!("String1={:?}", read_str(&mut ls, '"'));
+				}
+
 			}
 			'\'' => {
-				ls.move_next();
-				println!("String2={:?}", read_str(&mut ls, '\''));
+				if ls.next_two_is('\'', '\'') {
+					ls.move_over(3);
+					println!("3QuoStr->{:?}", read_triquote_str(&mut ls, '\''));
+				} else {				
+					ls.move_next();
+					println!("String2={:?}", read_str(&mut ls, '\''));
+				}
 			}
 			//
 			'[' | ']' | '(' | ')' | '{' | '}' => {
@@ -270,7 +314,7 @@ pub fn lex(s: &str) {
 			// Number
 			'.' | '0'...'9' => {
 				if c == '0' && ls.peek() == Some('x') {
-					ls.move_on(2);
+					ls.move_over(2);
 					println!("Hex Number={:?}", lex::number::read_hex_number(&mut ls));
 					ls.back();
 				} else {
