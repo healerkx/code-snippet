@@ -223,21 +223,34 @@ fn read_indents(ls: &mut LexState) -> Option<usize> {
 
 }
 
+fn is_keyword(sym: &str) -> bool {
+	false
+}
 
-pub fn lex(s: &str) {
+use lex::tokens::Token as Token;
+use lex::tokens::TokenType as TokenType;
+
+pub fn lex(s: &str) -> Vec<Token> {
+	let mut tokens = Vec::<Token>::new();
 	let mut ls = LexState::new(s);
 
 	while let Some(c) = ls.current() {
 		// println!("CHAR={:?}", c);
 		match c {
 			// New Line
-			'\n' | '\r' => { inc_line_number(&mut ls) }
+			'\n' | '\r' => { 
+				inc_line_number(&mut ls);
+				tokens.push(Token{ token_type: TokenType::NewLine})
+			}
 
 			// White spaces
 			' ' | '\t' => {
 				if ls.at_line_begin() {
 					if ls.is_python_indent_on() {
-						println!("Indent={:?}", read_indents(&mut ls));
+						if let Some(i) = read_indents(&mut ls) {
+							tokens.push(Token{ token_type: TokenType::Indent(i) });
+							println!("Indent={:?}", i);
+						}
 					}
 				}
 			} // Rust NOT support \f \v
@@ -308,7 +321,12 @@ pub fn lex(s: &str) {
 			}
 
 			'_' | 'a'...'z' | 'A'...'Z' => {
-				println!("Sym={:?}", read_sym(&mut ls));
+				let sym = read_sym(&mut ls);
+				if is_keyword(&sym) {
+					tokens.push(Token{ token_type: TokenType::Keyword(sym) });
+				} else {
+					tokens.push(Token{ token_type: TokenType::Symbol(sym) });
+				}
 			}
 
 			// Number
@@ -332,4 +350,6 @@ pub fn lex(s: &str) {
 		
 		ls.move_next();
 	}
+
+	tokens
 }
