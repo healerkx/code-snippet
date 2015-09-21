@@ -206,11 +206,10 @@ fn read_comment2(ls: &mut LexState) -> String {
 
 fn read_indents(ls: &mut LexState) -> Option<usize> {
 	let mut i = 0;
-	
 	while let Some(s) = ls.current() {
 		match s {
 			' ' => { i += 1 }
-			'\t' => { return None }
+			'\t' => { return None }	// NOT followed PEP8
 			_ => { ls.back(); break; }
 		}
 		ls.move_next();
@@ -220,7 +219,6 @@ fn read_indents(ls: &mut LexState) -> Option<usize> {
 	} else {
 		None
 	}
-
 }
 
 fn is_keyword(sym: &str) -> bool {
@@ -238,7 +236,7 @@ pub fn lex(s: &str) -> Vec<Token> {
 		// println!("CHAR={:?}", c);
 		match c {
 			// New Line
-			'\n' | '\r' => { 
+			'\n' | '\r' => {
 				inc_line_number(&mut ls);
 				tokens.push(Token{ token_type: TokenType::NewLine})
 			}
@@ -286,12 +284,12 @@ pub fn lex(s: &str) -> Vec<Token> {
 			}
 
 			':' => {
-				if ls.next_is(':') {
+				tokens.push(if ls.next_is(':') {
 					ls.move_next();
-					tokens.push(Token{ token_type: TokenType::Colon2 });
+					Token{ token_type: TokenType::Colon2 }
 				} else {
-					tokens.push(Token{ token_type: TokenType::Colon });
-				}
+					Token{ token_type: TokenType::Colon }
+				})
 			}
 
 			'=' => {
@@ -328,6 +326,7 @@ pub fn lex(s: &str) -> Vec<Token> {
 				}
 			}
 
+			// Symbol
 			'_' | 'a'...'z' | 'A'...'Z' => {
 				let sym = read_sym(&mut ls);
 				if is_keyword(&sym) {
@@ -362,8 +361,6 @@ pub fn lex(s: &str) -> Vec<Token> {
 					ls.back();
 				}
 			}
-
-			// Symbol
 
 			_ => {
 				println!("Not handled{:?}", c);

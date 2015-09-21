@@ -31,3 +31,10 @@ pub struct Token {
 
 }
 
+
+impl Token {
+	fn to_str(&self) -> String {
+		"".to_string()
+	}
+}
+
