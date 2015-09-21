@@ -34,21 +34,30 @@ pub fn read_hex_number(ls: &mut LexState) -> Option<String> {
 	Some(hex)
 }
 
-pub fn read_number(ls: &mut LexState) -> Option<String> {
-	let mut f = false;
-	let mut number = read_int(ls);
+pub fn read_number(ls: &mut LexState) -> Option<(String, bool)> {
+	let mut is_float = false;
 
+	let mut number = read_int(ls);
+	let has_int_part = number.len() > 0;
+	let mut has_decimal_part = false;
 	if let Some(d) = ls.current() {
 		if d == '.' {
 			number.push('.');
 			ls.move_next();
-			f = true;
+			is_float = true;
 		}
 	}
 	
-	if f {
+	if is_float {
 		let b = read_int(ls);
-		if b.len() > 0 { number = number + &b; }
+		if b.len() > 0 {
+			has_decimal_part = true;
+			number = number + &b;
+		}
+	}
+
+	if !has_int_part && !has_decimal_part {
+		return None;
 	}
 
 	if let Some(c) = ls.current() {
@@ -62,11 +71,13 @@ pub fn read_number(ls: &mut LexState) -> Option<String> {
 						number.push(c);
 						ls.move_next();
 						let e = read_int(ls);
+						is_float = true;
 						number = number + &e;
 					}
 
 					'0'...'9' => {
 						let e = read_int(ls);
+						is_float = true;
 						number = number + &e;
 					}
 					_ => { return None }
@@ -84,5 +95,5 @@ pub fn read_number(ls: &mut LexState) -> Option<String> {
 		}
 	}
 
-	Some(number)
+	Some((number, is_float))
 }

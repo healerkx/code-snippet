@@ -254,26 +254,30 @@ pub fn lex(s: &str) -> Vec<Token> {
 					}
 				}
 			} // Rust NOT support \f \v
-			';' => {}
-			',' => {}
+			';' => { tokens.push(Token{ token_type: TokenType::Semicolon }); }
+			',' => { tokens.push(Token{ token_type: TokenType::Comma }); }
 			// String Literal
 			'"' => {
 				if ls.next_two_is('"', '"') {
 					ls.move_over(3);
-					println!("3QuoStr->{:?}", read_triquote_str(&mut ls, '"'));
+					let s = read_triquote_str(&mut ls, '"');
+					tokens.push(Token{ token_type: TokenType::TriQuotedString(s, 0) });
 				} else {
 					ls.move_next();
-					println!("String1={:?}", read_str(&mut ls, '"'));
+					let s = read_str(&mut ls, '"');
+					tokens.push(Token{ token_type: TokenType::DoubleQuotedString(s) });
 				}
 
 			}
 			'\'' => {
 				if ls.next_two_is('\'', '\'') {
 					ls.move_over(3);
-					println!("3QuoStr->{:?}", read_triquote_str(&mut ls, '\''));
+					let s = read_triquote_str(&mut ls, '\'');
+					tokens.push(Token{ token_type: TokenType::TriQuotedString(s, 1) });
 				} else {				
 					ls.move_next();
-					println!("String2={:?}", read_str(&mut ls, '\''));
+					let s = read_str(&mut ls, '\'');
+					tokens.push(Token{ token_type: TokenType::SingleQuotedString(s) });
 				}
 			}
 			//
@@ -284,27 +288,31 @@ pub fn lex(s: &str) -> Vec<Token> {
 			':' => {
 				if ls.next_is(':') {
 					ls.move_next();
-					println!("{:?}", "::");
+					tokens.push(Token{ token_type: TokenType::Colon2 });
 				} else {
-					
+					tokens.push(Token{ token_type: TokenType::Colon });
 				}
 			}
 
 			'=' => {
 				if ls.next_is('=') {
 					ls.move_next();
-					
+					tokens.push(Token{ token_type: TokenType::Equal });
 				} else {
-					
+					tokens.push(Token{ token_type: TokenType::Assign });
 				}
 			}
 
-			'#' => { println!("comment={:?}", read_comment(&mut ls)) }
+			'#' => {
+				let comment = read_comment(&mut ls);
+				tokens.push(Token{ token_type: TokenType::ShellComment(comment) });
+			}
 			//------------------------------------
 			'/' => {
 				if ls.next_is('*') { /* comment */
 					ls.move_next();
-					println!("comment={:?}", read_comment2(&mut ls))
+					let comment = read_comment2(&mut ls);
+					tokens.push(Token{ token_type: TokenType::ClangComment(comment) });
 				} else if ls.next_is('=') {	// a/=3
 					ls.move_next();
 				} else {	// 2/3
@@ -329,14 +337,28 @@ pub fn lex(s: &str) -> Vec<Token> {
 				}
 			}
 
-			// Number
+			// Number TODO: BUG
 			'.' | '0'...'9' => {
 				if c == '0' && ls.peek() == Some('x') {
 					ls.move_over(2);
-					println!("Hex Number={:?}", lex::number::read_hex_number(&mut ls));
+					if let Some(hex) = lex::number::read_hex_number(&mut ls) {
+						tokens.push(Token{ token_type: TokenType::Hex(hex) });
+					} else {
+						println!("Bad Hex Number Token!");
+					}
+		
 					ls.back();
 				} else {
-					println!("Number={:?}", lex::number::read_number(&mut ls));
+					if let Some((number, is_float)) = lex::number::read_number(&mut ls) {
+						if is_float {
+							tokens.push(Token{ token_type: TokenType::Float(number) });
+						}
+						else {
+							tokens.push(Token{ token_type: TokenType::Int(number) });
+						}
+					} else {
+						println!("Bad Number Token!");
+					}
 					ls.back();
 				}
 			}

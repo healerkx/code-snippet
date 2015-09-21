@@ -2,14 +2,27 @@
 #[derive(Debug)]
 pub enum TokenType {
 	NewLine,
-	Int(i64),
-	Hex(i64),
-	Float(f64),
+	Int(String),
+	Hex(String),
+	Float(String),
 	Indent(usize),
 	ShellComment(String),
 	ClangComment(String),
+	SingleQuotedString(String),
+	DoubleQuotedString(String),
+	TriQuotedString(String, i32),
 	Symbol(String),
-	Keyword(String)
+	Keyword(String),
+
+
+	Equal,
+	Assign,
+	OpAssign,
+
+	Comma,
+	Colon,
+	Colon2,
+	Semicolon,
 }
 
 #[derive(Debug)]
