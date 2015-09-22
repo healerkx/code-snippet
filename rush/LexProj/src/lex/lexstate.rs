@@ -56,6 +56,7 @@ impl LexState {
 		false
 	}
 
+	#[warn(dead_code)]
 	fn next_is_any(&self, cs: &[char]) -> bool {
 		if let Some(x) = self.peek() {
 			for c in cs {
@@ -143,9 +144,9 @@ fn read_str(ls: &mut LexState, end: char) -> String {
 					ls.move_next();
 				}
 			}
-		} else if (c == '"' && end == '"') {
+		} else if c == '"' && end == '"' {
 			break;
-		} else if (c == '\'' && end == '\'') {
+		} else if c == '\'' && end == '\'' {
 			break;
 		} else {
 			ret.push(c)
@@ -234,95 +235,102 @@ pub fn lex(s: &str) -> Vec<Token> {
 
 	while let Some(c) = ls.current() {
 		// println!("CHAR={:?}", c);
-		match c {
+		let token_type = match c {
 			// New Line
 			'\n' | '\r' => {
 				inc_line_number(&mut ls);
-				tokens.push(Token{ token_type: TokenType::NewLine})
+				TokenType::NewLine
 			}
 
 			// White spaces
 			' ' | '\t' => {
-				if ls.at_line_begin() {
-					if ls.is_python_indent_on() {
-						if let Some(i) = read_indents(&mut ls) {
-							tokens.push(Token{ token_type: TokenType::Indent(i) });
-							println!("Indent={:?}", i);
-						}
-					}
-				}
+				if ls.at_line_begin() && ls.is_python_indent_on() {
+					if let Some(i) = read_indents(&mut ls) {
+						TokenType::Indent(i)
+					} else { TokenType::Skip }
+					//TokenType::Skip
+				} else { TokenType::Skip }
 			} // Rust NOT support \f \v
-			';' => { tokens.push(Token{ token_type: TokenType::Semicolon }); }
-			',' => { tokens.push(Token{ token_type: TokenType::Comma }); }
+			';' => { TokenType::Semicolon}
+			',' => { TokenType::Comma }
 			// String Literal
-			'"' => {
-				if ls.next_two_is('"', '"') {
+			
+			'"' | '\'' => {
+				if ls.next_two_is(c, c) {
 					ls.move_over(3);
-					let s = read_triquote_str(&mut ls, '"');
-					tokens.push(Token{ token_type: TokenType::TriQuotedString(s, 0) });
+					let s = read_triquote_str(&mut ls, c);
+					TokenType::TriQuotedString(s, 0)
 				} else {
 					ls.move_next();
-					let s = read_str(&mut ls, '"');
-					tokens.push(Token{ token_type: TokenType::DoubleQuotedString(s) });
+					let s = read_str(&mut ls, c);
+					TokenType::StringLiteral(s, c)
 				}
+			}
 
-			}
-			'\'' => {
-				if ls.next_two_is('\'', '\'') {
-					ls.move_over(3);
-					let s = read_triquote_str(&mut ls, '\'');
-					tokens.push(Token{ token_type: TokenType::TriQuotedString(s, 1) });
-				} else {				
-					ls.move_next();
-					let s = read_str(&mut ls, '\'');
-					tokens.push(Token{ token_type: TokenType::SingleQuotedString(s) });
-				}
-			}
 			//
-			'[' | ']' | '(' | ')' | '{' | '}' => {
-
-			}
+			'[' | ']' | '(' | ')' | '{' | '}' => { TokenType::Bracket(c) }
 
 			':' => {
-				tokens.push(if ls.next_is(':') {
+				if ls.next_is(':') {
 					ls.move_next();
-					Token{ token_type: TokenType::Colon2 }
+					TokenType::Colon2
 				} else {
-					Token{ token_type: TokenType::Colon }
-				})
+					TokenType::Colon
+				}
 			}
 
 			'=' => {
 				if ls.next_is('=') {
 					ls.move_next();
-					tokens.push(Token{ token_type: TokenType::Equal });
+					TokenType::Equal
 				} else {
-					tokens.push(Token{ token_type: TokenType::Assign });
+					TokenType::Assign
 				}
 			}
 
 			'#' => {
 				let comment = read_comment(&mut ls);
-				tokens.push(Token{ token_type: TokenType::ShellComment(comment) });
+				TokenType::ShellComment(comment)
 			}
 			//------------------------------------
 			'/' => {
 				if ls.next_is('*') { /* comment */
 					ls.move_next();
 					let comment = read_comment2(&mut ls);
-					tokens.push(Token{ token_type: TokenType::ClangComment(comment) });
+					TokenType::ClangComment(comment)
 				} else if ls.next_is('=') {	// a/=3
 					ls.move_next();
+					TokenType::ArithAssign("/=".to_string())
 				} else {	// 2/3
+					TokenType::Arithmetic("/".to_string())
 				}
 			}
 
-			'+' | '-' | '*' => {
-				if ls.next_is_any(&['=']) {
+			'*' => {
+				if ls.next_is('*') {
 					ls.move_next();
-					println!("{:?}", "+=");
+					if ls.next_is('=') {
+						TokenType::ArithAssign("**=".to_string())
+					} else {
+						TokenType::Arithmetic("**".to_string())
+					}
+				} else if ls.next_is('=') {
+					ls.move_next();
+					TokenType::ArithAssign("*=".to_string())
 				} else {
-					println!("OP{:?}", c);
+					TokenType::Arithmetic("*".to_string())
+				}
+			}
+
+			'+' | '-' => {
+				if ls.next_is(c) {
+					ls.move_next();
+					TokenType::Arithmetic(format!("{}{}", c, c))
+				} else if ls.next_is('=') {
+					ls.move_next();
+					TokenType::Arithmetic(format!("{}=", c))
+				} else {
+					TokenType::Arithmetic(c.to_string())
 				}
 			}
 
@@ -330,42 +338,47 @@ pub fn lex(s: &str) -> Vec<Token> {
 			'_' | 'a'...'z' | 'A'...'Z' => {
 				let sym = read_sym(&mut ls);
 				if is_keyword(&sym) {
-					tokens.push(Token{ token_type: TokenType::Keyword(sym) });
+					TokenType::Keyword(sym)
 				} else {
-					tokens.push(Token{ token_type: TokenType::Symbol(sym) });
+					TokenType::Symbol(sym)
 				}
 			}
-
+			
 			// Number TODO: BUG
 			'.' | '0'...'9' => {
 				if c == '0' && ls.peek() == Some('x') {
 					ls.move_over(2);
 					if let Some(hex) = lex::number::read_hex_number(&mut ls) {
-						tokens.push(Token{ token_type: TokenType::Hex(hex) });
+						ls.back();
+						TokenType::Hex(hex)
 					} else {
-						println!("Bad Hex Number Token!");
+						ls.back();
+						TokenType::BadToken
 					}
-		
-					ls.back();
 				} else {
 					if let Some((number, is_float)) = lex::number::read_number(&mut ls) {
 						if is_float {
-							tokens.push(Token{ token_type: TokenType::Float(number) });
+							ls.back();
+							TokenType::Float(number)
 						}
 						else {
-							tokens.push(Token{ token_type: TokenType::Int(number) });
+							ls.back();
+							TokenType::Int(number)
 						}
 					} else {
-						println!("Bad Number Token!");
+						ls.back();
+						TokenType::BadToken
 					}
-					ls.back();
 				}
 			}
 
 			_ => {
 				println!("Not handled{:?}", c);
+				TokenType::Skip
 			}
-		}
+		};
+
+		tokens.push(Token{ token_type: token_type });
 		
 		ls.move_next();
 	}
