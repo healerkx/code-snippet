@@ -1,7 +1,7 @@
 
-mod lexstate;
+pub mod lexstate;
 mod number;
-mod tokens;
+pub mod tokens;
 
 
 use lex::tokens::Token as Token;
