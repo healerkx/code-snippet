@@ -7,9 +7,7 @@ use lex::tokens::TokenType as TokenType;
 #[test]
 fn case_dec_integer() {
 	let i = lex::lexstate::lex("234");
-	let a = &i[0];
-
-	match &a.token_type {
+	match &i[0].token_type {
 		&TokenType::Int(ref n) => {
 			assert_eq!(n, "234");
 		}
@@ -20,9 +18,7 @@ fn case_dec_integer() {
 #[test]
 fn case_float1() {
 	let i = lex::lexstate::lex("234.5");
-	let a = &i[0];
-
-	match &a.token_type {
+	match &i[0].token_type {
 		&TokenType::Float(ref n) => {
 			assert_eq!(n, "234.5");
 		}
@@ -33,9 +29,7 @@ fn case_float1() {
 #[test]
 fn case_float2() {
 	let i = lex::lexstate::lex("234.");
-	let a = &i[0];
-
-	match &a.token_type {
+	match &i[0].token_type {
 		&TokenType::Float(ref n) => {
 			assert_eq!(n, "234.");
 		}
@@ -47,9 +41,7 @@ fn case_float2() {
 #[test]
 fn case_float3() {
 	let i = lex::lexstate::lex(".12");
-	let a = &i[0];
-
-	match &a.token_type {
+	match &i[0].token_type {
 		&TokenType::Float(ref n) => {
 			assert_eq!(n, ".12");
 		}
@@ -58,11 +50,43 @@ fn case_float3() {
 }
 
 #[test]
+fn case_e_float1() {
+	let i = lex::lexstate::lex(".12e33");
+	match &i[0].token_type {
+		&TokenType::Float(ref n) => {
+			assert_eq!(n, ".12e33");
+		}
+		_ => { assert!(false); }
+	}
+}
+
+#[test]
+fn case_e_float2() {
+	let i = lex::lexstate::lex("1.e+4");
+	match &i[0].token_type {
+		&TokenType::Float(ref n) => {
+			assert_eq!(n, "1.e+4");
+		}
+		_ => { assert!(false); }
+	}
+}
+
+
+#[test]
+fn case_e_float3() {
+	let i = lex::lexstate::lex("1.2e3");
+	match &i[0].token_type {
+		&TokenType::Float(ref n) => {
+			assert_eq!(n, "1.2e3");
+		}
+		_ => { assert!(false); }
+	}
+}
+
+#[test]
 fn case_hex() {
 	let i = lex::lexstate::lex("0x123f");
-	let a = &i[0];
-
-	match &a.token_type {
+	match &i[0].token_type {
 		&TokenType::Hex(ref n) => {
 			assert_eq!(n, "0x123f");
 		}
