@@ -1,6 +1,7 @@
 
 
 mod lex;
+mod tests;
 
 fn main() {
 
