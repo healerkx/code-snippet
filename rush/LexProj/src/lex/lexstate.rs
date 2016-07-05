@@ -39,7 +39,7 @@ impl LexState {
 
 	fn next_is(&self, c: char) -> bool {
 		if let Some(x) = self.peek() {
-			return x == c;
+			x == c
 		} else {
 			false
 		}
@@ -60,7 +60,7 @@ impl LexState {
 	fn next_is_any(&self, cs: &[char]) -> bool {
 		if let Some(x) = self.peek() {
 			for c in cs {
-				if x == *c { return true; }
+				if x == *c { return true }
 			}
 			false
 		} else {
