@@ -2,6 +2,8 @@
 import pandas
 import tushare as ts
 import os
+import sys
+import datetime
 
 def fetch_today_all_share_data(dest_path):
     """
@@ -24,7 +26,7 @@ def fetch_today_all_share_data(dest_path):
         if percent != last_percent:
             last_percent = percent
             print('Current %d %%' % percent)
-        yield v        
+        yield v
 
 # 根据股票的code获取5分钟K线数据, 并且dump到文件
 def get_share_data_by_code(code, today, path):
@@ -42,12 +44,31 @@ def get_share_data_by_code(code, today, path):
         data.to_pickle(os.path.join(path, code))
         return data
 
-ashare_path = 'F:\\stock-data\\ashare'
-today = '2016-07-21'
+
+k5_path = os.getcwd()
+config_file = os.path.join(k5_path, 'k5.config')
+with open(config_file) as file:
+    for line in file.readlines():
+        if line.startswith('dest-path'):
+            ashare_path = line[line.index('=') + 1:]
+
+if len(ashare_path) == 0:
+    print("Please provide dest-path for saving data")
+    exit()
+
+if len(sys.argv) == 1:
+    now = datetime.datetime.now() 
+    today = now.strftime("%Y-%m-%d")
+else:
+    today = sys.argv[1]
+
+
 dest_path = os.path.join(ashare_path, today)
 
 if not os.path.exists(dest_path):
     os.mkdir(dest_path)
+
+print("Start to save share data of the date (%s)" % today)
 
 for v in fetch_today_all_share_data(dest_path):
     code = v[0]
