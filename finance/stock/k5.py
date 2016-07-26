@@ -5,6 +5,9 @@ import os
 import sys
 import datetime
 
+# K线类型
+ktypes = ['D', '60', '30', '15']
+
 def fetch_today_all_share_data(dest_path):
     """
     """
@@ -29,20 +32,33 @@ def fetch_today_all_share_data(dest_path):
         yield v
 
 # 根据股票的code获取5分钟K线数据, 并且dump到文件
-def get_share_data_by_code(code, today, path):
+def save_share_data_by_code(code, today, path):
     """
     code: Share code, 股票代码
     today: Date in format YYYY-MM-DD, 日期
     path: Dest path, 目标路径
     """
-    filename = os.path.join(path, code)
-    if os.path.exists(filename):
-        return pandas.read_pickle(filename)
-    else:
-        data = ts.get_hist_data(code, start=today, ktype='5')
+    code_path = os.path.join(path, code)
+    if not os.path.exists(code_path):
+        os.mkdir(code_path)
 
-        data.to_pickle(os.path.join(path, code))
-        return data
+    for ktype in ktypes:
+        filename = os.path.join(path, code, ktype)
+        # print(filename)
+        if not os.path.exists(filename):
+            data = ts.get_hist_data(code, start=today, end=today, ktype=ktype)
+            if data is None:
+                with open(os.path.join(code_path, 'none'), 'a') as file:
+                    file.write("%s\n" % ktype)
+                continue
+                
+            if len(data.values) == 0:
+                with open(os.path.join(code_path, 'empty'), 'a') as file:
+                    file.write("%s\n" % ktype)       
+                continue
+
+            data.to_pickle(filename)
+
 
 
 k5_path = os.getcwd()
@@ -74,6 +90,7 @@ for v in fetch_today_all_share_data(dest_path):
     code = v[0]
     name = v[1]
     print('Saving %s(%s)' % (name, code))
-    get_share_data_by_code(code, today, dest_path)
+    save_share_data_by_code(code, today, dest_path)
+    
 
 
