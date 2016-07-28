@@ -6,7 +6,6 @@ import sys
 import datetime
 
 # K线类型
-ktypes = ['D', '60', '30', '15']
 
 def fetch_today_all_share_data(dest_path):
     """
@@ -38,25 +37,12 @@ def save_share_data_by_code(code, today, path):
     today: Date in format YYYY-MM-DD, 日期
     path: Dest path, 目标路径
     """
-    code_path = os.path.join(path, code)
-    if not os.path.exists(code_path):
-        os.mkdir(code_path)
 
-    for ktype in ktypes:
-        filename = os.path.join(path, code, ktype)
-        # print(filename)
-        if not os.path.exists(filename):
-            data = ts.get_hist_data(code, start=today, end=today, ktype=ktype)
-            if data is None:
-                with open(os.path.join(code_path, 'none'), 'a') as file:
-                    file.write("%s\n" % ktype)
-                continue
-                
-            if len(data.values) == 0:
-                with open(os.path.join(code_path, 'empty'), 'a') as file:
-                    file.write("%s\n" % ktype)       
-                continue
-
+    filename = os.path.join(path, code)
+    # print(filename)
+    if not os.path.exists(filename):
+        data = ts.get_hist_data(code, start=today, end=today, ktype='5')
+        if data is not None and len(data.values) != 0:
             data.to_pickle(filename)
 
 
