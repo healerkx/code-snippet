@@ -16,14 +16,10 @@ class Vertex:
     def visit_next(self):
         if self.can_visit_next():
             cur = self.adjacencies[self.visit]
-            # print(cur)
             self.visit += 1
             return cur
         else:
             return None
-
-    def path(self):
-        pass
 
     def adjacency_list(self):
         return ','.join(map(lambda x: str(x.inner), self.adjacencies))
