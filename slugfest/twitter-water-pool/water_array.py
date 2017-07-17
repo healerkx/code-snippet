@@ -5,7 +5,7 @@
 
 """
 a = [2, 5, 1, 2, 3, 4, 7, 7, 6]
-a = [11, 0, 7, 0, 5, 0, 11, 0, 100]
+a = [7, 0, 11, 0, 5, 0, 11, 0, 100]
 
 def max_pos(a):
 	return max(a), a.index(max(a))
@@ -26,4 +26,5 @@ def area(a, left):
 		return sum(d) + area(a[p + 1:len(a)], left)
 
 m, p = max_pos(a)
-area(a[0: p], True) + area(a[p + 1:len(a)], False)
+s = area(a[0: p], True) + area(a[p + 1:len(a)], False)
+print(s)
