@@ -1,9 +1,8 @@
 
-import datetime
-import dateutil.parser
-import re
+import datetime, re, os, sys, dateutil.parser
 from functools import reduce
 from pyquery import PyQuery as pq
+from optparse import OptionParser
 
 
 class Objective:
@@ -71,6 +70,16 @@ class Task:
     def add_assignee(self, assignee):
         self.assignees.append(assignee)
 
+def get_earliest_date(o):
+    date = "3000-01-01"
+    for p in o.projects:
+        for s in p.stages:
+            for t in s.tasks:
+                if date > t.begin_date:
+                    date = t.begin_date
+    return date
+
+
 def regular_date(date):
     return dateutil.parser.parse(date).strftime("%Y-%m-%d")
 
@@ -109,8 +118,8 @@ def parse_line(line):
     return (level, name, time_range, assignees)
 
 #
-def parse_todo_file(todo_file):
-    with open(todo_file) as file:
+def parse_sched_file(sched_file):
+    with open(sched_file) as file:
         o = Objective()
         for line in file.readlines():
             line = line.strip()
@@ -192,9 +201,7 @@ def create_tab_header(tab, date_begin, date_count):
 def stage_color(stage):
     return Stages[stage][1]
 
-def render_project_view(o):
-    date_begin = '2019-11-05'
-    date_count = 24
+def gen_project_view(o, date_begin, date_count):
     page, body = prepare_bootstrap_page()
     _tab, _thead, tbody = create_tab(body, date_begin, date_count)
     
@@ -239,17 +246,27 @@ def render_project_view(o):
                     i += diff
 
             tbody.append(tr)
+    return page
 
-    # print(tab)    
-    with open("./a.html", "w") as file:
+if __name__ == '__main__':
+
+    parser = OptionParser()
+
+    parser.add_option("-f", "--file", action="store", dest="file", help="Provide schedule filename")
+    parser.add_option("-b", "--date-begin", action="store", dest="date_begin", help="Provide view begin date")
+    parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
+
+    options, args = parser.parse_args()
+    filename = options.file
+    if not filename:
+        exit()
+    o = parse_sched_file(filename)
+
+    date_begin = options.date_begin
+    if not date_begin:
+        date_begin = get_earliest_date(o)
+        
+    page = gen_project_view(o, date_begin, options.date_count)
+
+    with open(os.path.join(os.path.dirname(filename), "schedule.html"), "w") as file:
         file.write(str(page))
-
-
-
-def render_resource_view(o):
-    pass
-
-o = parse_todo_file("a.todo")
-visit_objective(o)
-render_project_view(o)
-
