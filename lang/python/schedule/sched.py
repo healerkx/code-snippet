@@ -205,9 +205,6 @@ def create_tab_header(tab, date_begin, date_count, only_working_dates):
     tab.append(thead)
     return thead
 
-def stage_color(stage):
-    return Stages[stage][1]
-
 def gen_project_view(o, date_begin, date_count, only_working_dates):
     page, body = prepare_bootstrap_page()
     _tab, _thead, tbody = create_tab(body, date_begin, date_count, only_working_dates)
@@ -244,7 +241,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
                         diff = dates_diff(task.begin_date, task.end_date, only_working_dates) + 1
                         date_td.append(pq(f"<span>{task.task_name}</span>"))
                         date_td.attr.colspan = str(diff)
-                        color = stage_color(stage.stage)
+                        color = Stages[stage.stage][1]
                         date_td.attr.style = f"background-color:{color}"
                         tr.append(date_td)
                         break
