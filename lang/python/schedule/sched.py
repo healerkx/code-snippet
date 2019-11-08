@@ -6,6 +6,13 @@ from optparse import OptionParser
 
 Date_Format = "%Y-%m-%d"
 
+Stages = { 
+    1: ("设计", "#9feeee"),
+    2: ("开发", "#7feeaa"),
+    3: ("联调", "#ffee7f"),
+    4: ("测试", "#ffaa8f"),
+    5: ("上线", "#dd4444")}
+
 class Objective:
     def __init__(self):
         self.projects = []
@@ -29,19 +36,6 @@ class Project:
 
     def all_assignees(self):
         return sorted(set(reduce(lambda y, x: y + list(x.all_assignees()), self.stages, [])))
-
-Stage_Design    = 1
-Stage_Develop   = 2
-Stage_CoDebug   = 3
-Stage_Test      = 4
-Stage_Online    = 5
-
-Stages = { 
-    Stage_Design: ("设计", "#9feeee"),
-    Stage_Develop: ("开发", "#7feeaa"),
-    Stage_CoDebug: ("联调", "#ffee7f"),
-    Stage_Test: ("测试", "#ffaa8f"),
-    Stage_Online: ("上线", "#dd4444")}
 
 def parse_stage(stage):
     for s, n in Stages.items():
@@ -100,11 +94,9 @@ def parse_time_range(time_range_part):
 
 def parse_line(line):
     r = re.findall(r"(#+)\s*([\w~\-_+]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
-
-    if not r or len(r) == 0:
-        return None
+    if not r or len(r) == 0: return None
     items = r[0]
-    print(items)
+    # print(items)
     level = 0
     name = None
     time_range = (None, None)
@@ -149,14 +141,6 @@ def my_tasks(project, assignee):
             if assignee in t.assignees:
                 tasks.append((s, t))
     return tasks
-
-def visit_objective(o, func=None):
-    for p in o.projects:
-        print(p.project_name)
-        for s in p.stages:
-            print("  " + s.stage_name)
-            for t in s.tasks:
-                print(f"{t.task_name}: {t.begin_date}~{t.end_date}, {t.assignees}")
 
 def is_working_day(date):
     if isinstance(date, str): weekday = dateutil.parser.parse(date).weekday()
@@ -210,11 +194,12 @@ def create_tab_header(tab, date_begin, date_count, only_working_dates):
     for date in dates(date_begin, date_count):
         if only_working_dates and not is_working_day(date):
             continue
-        display = date.strftime(Date_Format)[5:].replace("-", "/")
+        format_date = date.strftime(Date_Format)
+        display = format_date[5:].replace("-", "/")
         if only_working_dates and is_working_day(date):
             if date.weekday() == 0: display += " (Mon)"
         date_td = pq(f"<td><span>{display}</span></td>")
-        if date.strftime(Date_Format) == today: set_bgcolor(date_td, "yellow")
+        if format_date == today: set_bgcolor(date_td, "yellow")
         tr.append(date_td)
     thead.append(tr)
     tab.append(thead)
