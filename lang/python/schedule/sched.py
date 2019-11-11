@@ -7,11 +7,11 @@ from optparse import OptionParser
 Date_Format = "%Y-%m-%d"
 
 Stages = { 
-    1: ("设计", "#9feeee"),
-    2: ("开发", "#7feeaa"),
-    3: ("联调", "#ffee7f"),
-    4: ("测试", "#ffaa8f"),
-    5: ("上线", "#dd4444")}
+    1: ("设计", "#deebff", "highlight-blue confluenceTd"),
+    2: ("开发", "#e3fcef", "highlight-green confluenceTd"),
+    3: ("联调", "#fffae5", "highlight-yellow confluenceTd"),
+    4: ("测试", "#f4f5f7", "highlight-grey confluenceTd"),
+    5: ("上线", "#ffebe5", "highlight-red confluenceTd")}
 
 class Objective:
     def __init__(self):
@@ -93,10 +93,10 @@ def parse_time_range(time_range_part):
     else: return [time_range_part, time_range_part]
 
 def parse_line(line):
-    r = re.findall(r"(#+)\s*([\w~\-_+]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
+    r = re.findall(r"(#+)\s*([\s\w~\-_+\(\)!]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
     if not r or len(r) == 0: return None
     items = r[0]
-    # print(items)
+    print(items)
     level = 0
     name = None
     time_range = (None, None)
@@ -179,7 +179,7 @@ def prepare_bootstrap_page():
 
 def create_tab(body, date_begin, date_count, only_working_dates):
     tab = pq("<table>")
-    tab.add_class("table table-bordered table-hover table-striped")
+    tab.add_class("table table-bordered table-hover table-striped confluenceTable tablesorter tablesorter-default")
     thead = create_tab_header(tab, date_begin, date_count, only_working_dates)
     tbody = pq("<tbody>")
     tab.append(tbody)
@@ -212,6 +212,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
     dates_list = dates(date_begin, date_count, only_working_dates)
     dates_list = list(map(lambda x: x.strftime(Date_Format), dates_list))
     for p in o.projects:
+        if p.project_name.startswith('!'): continue
         has_project_name = False
         for assignee in p.all_assignees():
             tr = pq(f"<tr>")
@@ -243,6 +244,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
                         date_td.attr.colspan = str(diff)
                         color = Stages[stage.stage][1]
                         date_td.attr.style = f"background-color:{color}"
+                        date_td.add_class(Stages[stage.stage][2])
                         tr.append(date_td)
                         break
                 if not hit_some_task_begin_date:
@@ -274,3 +276,23 @@ if __name__ == '__main__':
 
     with open(os.path.join(os.path.dirname(filename), "schedule.html"), "w") as file:
         file.write(str(page))
+
+##################
+# 在项目前面加! 就可以隐藏整个项目
+# 例子:
+# ------------------------------------------
+# 多服务商
+## 设计
+### 整体设计 [2019-11-1~2019-11-5] @雪芹
+## 开发
+### JOB开发 [7~11] @冯征
+### API开发 [7~11] @泽乾
+### 分单策略后端java [6~11] @雪芹
+### 前端开发 [8~11] @彤硕
+## 联调
+### 各端联调 [12~13] @冯征 @泽乾 @雪芹 @彤硕
+## 测试
+### QA测试 [14~19] @冯征 @泽乾 @雪芹 @彤硕
+## 上线 
+### 上线 [20] @冯征 @泽乾 @雪芹 @彤硕
+# ------------------------------------------
