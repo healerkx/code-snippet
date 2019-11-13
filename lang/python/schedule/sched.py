@@ -7,11 +7,11 @@ from optparse import OptionParser
 Date_Format = "%Y-%m-%d"
 
 Stages = { 
-    1: ("设计", "#deebff", "highlight-blue confluenceTd"),
-    2: ("开发", "#e3fcef", "highlight-green confluenceTd"),
-    3: ("联调", "#fffae5", "highlight-yellow confluenceTd"),
-    4: ("测试", "#f4f5f7", "highlight-grey confluenceTd"),
-    5: ("上线", "#ffebe5", "highlight-red confluenceTd")}
+    1: ("设计", "#deebff", "blue"),
+    2: ("开发", "#e3fcef", "green"),
+    3: ("联调", "#fffae5", "yellow"),
+    4: ("测试", "#f4f5f7", "grey"),
+    5: ("上线", "#ffebe5", "red")}
 
 class Objective:
     def __init__(self):
@@ -93,7 +93,7 @@ def parse_time_range(time_range_part):
     else: return [time_range_part, time_range_part]
 
 def parse_line(line):
-    r = re.findall(r"(#+)\s*([\s\w~\-_+\(\)!]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
+    r = re.findall(r"(#+)\s*([\s\w~\-_+\(\)!%]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
     if not r or len(r) == 0: return None
     items = r[0]
     print(items)
@@ -171,7 +171,7 @@ def dates_diff(begin, end, only_working_dates=True):
 def set_bgcolor(elem, color): elem.attr.style = f"background-color: {color}"
 
 def prepare_bootstrap_page():
-    page = pq("<html></html")
+    page = pq("<html>")
     body = pq("<body>")
     body.append(pq("<link href='https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet'>"))
     page.append(body)
@@ -242,9 +242,10 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
                         diff = dates_diff(task.begin_date, task.end_date, only_working_dates) + 1
                         date_td.append(pq(f"<span>{task.task_name}</span>"))
                         date_td.attr.colspan = str(diff)
-                        color = Stages[stage.stage][1]
-                        date_td.attr.style = f"background-color:{color}"
-                        date_td.add_class(Stages[stage.stage][2])
+                        
+                        date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
+                        date_td.attr['data-highlight-colour']=Stages[stage.stage][2]
+                        date_td.add_class(f"confluenceTd")
                         tr.append(date_td)
                         break
                 if not hit_some_task_begin_date:
@@ -261,7 +262,8 @@ if __name__ == '__main__':
     parser.add_option("-b", "--date-begin", action="store", dest="date_begin", help="Provide view begin date")
     parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
     parser.add_option("-w", "--only-working-dates", action="store", dest="only_working_dates", help="Provide working dates setting", default=True)
-
+    parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name", default="schedule.html")
+    
     options, args = parser.parse_args()
     filename = options.file
     if not filename:
@@ -274,7 +276,7 @@ if __name__ == '__main__':
 
     page = gen_project_view(o, date_begin, int(options.date_count), options.only_working_dates)
 
-    with open(os.path.join(os.path.dirname(filename), "schedule.html"), "w") as file:
+    with open(os.path.join(os.path.dirname(filename), options.output), "w") as file:
         file.write(str(page))
 
 ##################
