@@ -135,13 +135,9 @@ def parse_sched_file(sched_file):
     return None
 
 def my_tasks(project, assignee):
-    tasks = []
-    for s in project.stages:
-        for t in s.tasks:
-            if assignee in t.assignees:
-                tasks.append((s, t))
-    return tasks
+    return [(s, t) for s in project.stages for t in s.tasks if assignee in t.assignees]
 
+# TODO: Add external workingDays config
 def is_working_day(date):
     if isinstance(date, str): weekday = dateutil.parser.parse(date).weekday()
     else: weekday = date.weekday()
@@ -244,7 +240,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
                         date_td.attr.colspan = str(diff)
                         
                         date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
-                        date_td.attr['data-highlight-colour']=Stages[stage.stage][2]
+                        date_td.attr['data-highlight-colour'] = Stages[stage.stage][2]
                         date_td.add_class(f"confluenceTd")
                         tr.append(date_td)
                         break
