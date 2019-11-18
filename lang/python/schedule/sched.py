@@ -64,14 +64,21 @@ class Task:
     def add_assignee(self, assignee):
         self.assignees.append(assignee)
 
-def get_earliest_date(o):
-    date = "3000-01-01"
+def yield_task(o):
     for p in o.projects:
         for s in p.stages:
-            for t in s.tasks:
-                if date > t.begin_date: date = t.begin_date
+            for t in s.tasks: yield t
+
+def get_earliest_begin_date(o):
+    date = "3000-01-01"
+    for t in yield_task(o):
+        if date > t.begin_date: date = t.begin_date
     return date
 
+def get_latest_end_date(o, date):
+    for t in yield_task(o):
+        if date < t.end_date: date = t.end_date
+    return date
 
 def regular_date(date):
     return dateutil.parser.parse(date).strftime(Date_Format)
@@ -203,6 +210,9 @@ def create_tab_header(tab, date_begin, date_count, only_working_dates):
 
 def gen_project_view(o, date_begin, date_count, only_working_dates):
     page, body = prepare_bootstrap_page()
+    if date_count <= 0:
+        date_count = dates_diff(date_begin, get_latest_end_date(o, date_begin), False) + 1
+
     _tab, _thead, tbody = create_tab(body, date_begin, date_count, only_working_dates)
     
     dates_list = dates(date_begin, date_count, only_working_dates)
@@ -238,7 +248,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
                         diff = dates_diff(task.begin_date, task.end_date, only_working_dates) + 1
                         date_td.append(pq(f"<span>{task.task_name}</span>"))
                         date_td.attr.colspan = str(diff)
-                        
+
                         date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
                         date_td.attr['data-highlight-colour'] = Stages[stage.stage][2]
                         date_td.add_class(f"confluenceTd")
@@ -268,7 +278,7 @@ if __name__ == '__main__':
 
     date_begin = options.date_begin
     if not date_begin:
-        date_begin = get_earliest_date(o)
+        date_begin = get_earliest_begin_date(o)
 
     page = gen_project_view(o, date_begin, int(options.date_count), options.only_working_dates)
 
