@@ -208,6 +208,33 @@ def create_tab_header(tab, date_begin, date_count, only_working_dates):
     tab.append(thead)
     return thead
 
+def gen_project_view_task_line(tr, tasks, dates_list, only_working_dates):
+    i = 0
+    while i < len(dates_list):
+        hit_some_task_begin_date = False
+        diff = 1
+        for (stage, task) in tasks:
+            # TODO: 如果date_begin大于某个task的begin, 那么整个task就不会显示了
+            # TODO: 一个人的两个Task是不能有交集的, 
+            if task.begin_date == dates_list[i]:
+                hit_some_task_begin_date = True
+                date_td = pq(f"<td>")
+
+                diff = dates_diff(task.begin_date, task.end_date, only_working_dates) + 1
+                date_td.append(pq(f"<span>{task.task_name}</span>"))
+                date_td.attr.colspan = str(diff)
+
+                date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
+                date_td.attr['data-highlight-colour'] = Stages[stage.stage][2]
+                date_td.add_class(f"confluenceTd")
+                tr.append(date_td)
+                break
+        if not hit_some_task_begin_date:
+            date_td = pq(f"<td>")
+            tr.append(date_td)
+
+        i += diff
+
 def gen_project_view(o, date_begin, date_count, only_working_dates):
     page, body = prepare_bootstrap_page()
     if date_count <= 0:
@@ -233,33 +260,7 @@ def gen_project_view(o, date_begin, date_count, only_working_dates):
             tr.append(assignee_td)
 
             tasks = my_tasks(p, assignee)
-            if not tasks: continue
-
-            i = 0
-            while i < len(dates_list):
-                hit_some_task_begin_date = False
-                diff = 1
-                for (stage, task) in tasks:
-                    # TODO: 如果date_begin大于某个task的begin, 那么整个task就不会显示了
-                    if task.begin_date == dates_list[i]:
-                        hit_some_task_begin_date = True
-                        date_td = pq(f"<td>")
-
-                        diff = dates_diff(task.begin_date, task.end_date, only_working_dates) + 1
-                        date_td.append(pq(f"<span>{task.task_name}</span>"))
-                        date_td.attr.colspan = str(diff)
-
-                        date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
-                        date_td.attr['data-highlight-colour'] = Stages[stage.stage][2]
-                        date_td.add_class(f"confluenceTd")
-                        tr.append(date_td)
-                        break
-                if not hit_some_task_begin_date:
-                    date_td = pq(f"<td>")
-                    tr.append(date_td)
-
-                i += diff
-
+            if tasks: gen_project_view_task_line(tr, tasks, dates_list, only_working_dates)
     return page
 
 if __name__ == '__main__':
@@ -268,21 +269,18 @@ if __name__ == '__main__':
     parser.add_option("-b", "--date-begin", action="store", dest="date_begin", help="Provide view begin date")
     parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
     parser.add_option("-w", "--only-working-dates", action="store", dest="only_working_dates", help="Provide working dates setting", default=True)
-    parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name", default="schedule.html")
+    parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name")
     
     options, args = parser.parse_args()
     filename = options.file
-    if not filename:
-        exit()
-    o = parse_sched_file(filename)
 
-    date_begin = options.date_begin
-    if not date_begin:
-        date_begin = get_earliest_begin_date(o)
+    o = parse_sched_file(filename) if filename else exit()
+    date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(o)
+    output_filename = options.output if options.output else f"{filename}.html"
 
     page = gen_project_view(o, date_begin, int(options.date_count), options.only_working_dates)
 
-    with open(os.path.join(os.path.dirname(filename), options.output), "w") as file:
+    with open(os.path.join(os.path.dirname(filename), output_filename), "w") as file:
         file.write(str(page))
 
 ##################
