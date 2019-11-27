@@ -81,7 +81,10 @@ def get_latest_end_date(o, date):
     return date
 
 def regular_date(date):
-    return dateutil.parser.parse(date).strftime(Date_Format)
+    try:
+        return dateutil.parser.parse(date).strftime(Date_Format)
+    except:
+        return datetime.datetime.today().strftime(Date_Format)
 
 def parse_date(date):
     date = date.strip()
@@ -282,23 +285,3 @@ if __name__ == '__main__':
 
     with open(os.path.join(os.path.dirname(filename), output_filename), "w") as file:
         file.write(str(page))
-
-##################
-# 在项目前面加! 就可以隐藏整个项目
-# 例子:
-# ------------------------------------------
-# 多服务商
-## 设计
-### 整体设计 [2019-11-1~2019-11-5] @雪芹
-## 开发
-### JOB开发 [7~11] @冯征
-### API开发 [7~11] @泽乾
-### 分单策略后端java [6~11] @雪芹
-### 前端开发 [8~11] @彤硕
-## 联调
-### 各端联调 [12~13] @冯征 @泽乾 @雪芹 @彤硕
-## 测试
-### QA测试 [14~19] @冯征 @泽乾 @雪芹 @彤硕
-## 上线 
-### 上线 [20] @冯征 @泽乾 @雪芹 @彤硕
-# ------------------------------------------
