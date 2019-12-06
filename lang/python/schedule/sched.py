@@ -242,10 +242,9 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
                 date_td.add_class(f"confluenceTd")
                 tr.append(date_td)
                 break
-        if not hit_some_task_begin_date:
-            date_td = pq(f"<td>")
-            tr.append(date_td)
 
+        if not hit_some_task_begin_date:
+            tr.append(pq(f"<td>"))
         i += diff
 
 def gen_project_view(o, date_begin, date_count, working_dates):
@@ -255,8 +254,7 @@ def gen_project_view(o, date_begin, date_count, working_dates):
 
     _tab, _thead, tbody = create_tab(body, date_begin, date_count, working_dates)
     
-    dates_list = dates(date_begin, date_count, working_dates)
-    dates_list = list(map(lambda x: x.strftime(Date_Format), dates_list))
+    dates_list = [d.strftime(Date_Format) for d in dates(date_begin, date_count, working_dates)]
     for p in o.projects:
         if p.project_name.startswith('!'): continue
         has_project_name = False
@@ -276,8 +274,7 @@ def gen_project_view(o, date_begin, date_count, working_dates):
             if not stages_and_tasks:
                 continue
             last_task_end_date = datetime.datetime.today().strftime(Date_Format)
-            for (stage, task) in stages_and_tasks:
-                
+            for (_, task) in stages_and_tasks:            
                 if task.begin_date == "": task.begin_date = next_day(last_task_end_date, working_dates)
                 if task.end_date == "": task.end_date = task.begin_date
                 last_task_end_date = task.end_date
