@@ -90,8 +90,11 @@ def regular_date(date):
     except:
         return ""
 
-def next_day(date, days=1):
-    return (dateutil.parser.parse(date) + datetime.timedelta(days=days)).strftime(Date_Format)
+def next_day(date, working_dates, days=1):
+    d = dateutil.parser.parse(date) + datetime.timedelta(days=days)
+    while not is_working_day(d, working_dates):
+        d += datetime.timedelta(days=1)
+    return d.strftime(Date_Format)
 
 def parse_date(date):
     date = date.strip()
@@ -177,10 +180,9 @@ def dates_diff(begin, end, working_dates):
     b, e = dateutil.parser.parse(begin), dateutil.parser.parse(end)
     count = 0
     while b != e:
-        if is_working_day(b, working_dates): count += 1
+        count += is_working_day(b, working_dates)
         b += datetime.timedelta(1)
     return count
-
 
 def set_bgcolor(elem, color): elem.attr.style = f"background-color: {color}"
 
@@ -276,7 +278,7 @@ def gen_project_view(o, date_begin, date_count, working_dates):
             last_task_end_date = datetime.datetime.today().strftime(Date_Format)
             for (stage, task) in stages_and_tasks:
                 
-                if task.begin_date == "": task.begin_date = next_day(last_task_end_date)
+                if task.begin_date == "": task.begin_date = next_day(last_task_end_date, working_dates)
                 if task.end_date == "": task.end_date = task.begin_date
                 last_task_end_date = task.end_date
 
@@ -296,10 +298,8 @@ if __name__ == '__main__':
 
     o = parse_sched_file(filename) if filename else exit()
     date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(o)
-    
-    output_filename = options.output if options.output else f"{filename}.html"
-
     page = gen_project_view(o, date_begin, int(options.date_count), options.working_dates.split(","))
 
+    output_filename = options.output if options.output else f"{filename}.html"
     with open(os.path.join(os.path.dirname(filename), output_filename), "w") as file:
         file.write(str(page))
