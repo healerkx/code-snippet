@@ -158,23 +158,16 @@ def parse_sched_file(sched_file):
 def my_stages_and_tasks(project, assignee):
     return [(s, copy.copy(t)) for s in project.stages for t in s.tasks if assignee in t.assignees]
 
-# TODO: Add external workingDays config
-def is_working_day(date, working_dates):
-    if isinstance(date, str):
-        weekday = dateutil.parser.parse(date).weekday()
-    else: 
-        weekday = date.weekday()
-        date = date.strftime(Date_Format)
+def is_working_day(date_obj, working_dates):
+    date = date_obj.strftime(Date_Format)
     if f"~{date}" in working_dates: return False
     if date in working_dates: return True
+    weekday = date_obj.weekday()
     if f"w{weekday}" in working_dates: return True
     return False
 
 def dates(date_begin=None, date_count=14, working_dates=['w0', 'w1', 'w2', 'w3', 'w4']):
-    if not date_begin:
-        date_begin = datetime.datetime.now()
-    elif isinstance(date_begin, str):
-        date_begin = dateutil.parser.parse(date_begin)
+    if not date_begin: date_begin = datetime.datetime.now()
     f = lambda x: date_begin + datetime.timedelta(days=x)
     return [f(i) for i in range(0, date_count) if is_working_day(f(i), working_dates)]
     
@@ -208,7 +201,7 @@ def create_tab_header(tab, date_begin, date_count, working_dates):
     thead, tr = pq("<thead>"), pq("<tr>")
     tr.append(pq("<td>项目</td>"))
     tr.append(pq("<td style='min-width:5em'>RD</td>"))
-    today = datetime.datetime.today().strftime(Date_Format)
+    today_str = datetime.datetime.today().strftime(Date_Format)
     for date in dates(date_begin, date_count, working_dates):
         if not is_working_day(date, working_dates):
             continue
@@ -217,7 +210,7 @@ def create_tab_header(tab, date_begin, date_count, working_dates):
         if is_working_day(date, working_dates):
             if date.weekday() == 0: display += " (Mon)"
         date_td = pq(f"<td><span>{display}</span></td>")
-        if format_date == today: set_bgcolor(date_td, "yellow")
+        if format_date == today_str: set_bgcolor(date_td, "yellow")
         tr.append(date_td)
     thead.append(tr)
     tab.append(thead)
@@ -297,7 +290,7 @@ if __name__ == '__main__':
 
     o = parse_sched_file(filename) if filename else exit()
     date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(o)
-    page = gen_project_view(o, date_begin, int(options.date_count), options.working_dates.split(","))
+    page = gen_project_view(o, dateutil.parser.parse(date_begin), int(options.date_count), options.working_dates.split(","))
 
     output_filename = options.output if options.output else f"{filename}.html"
     with open(os.path.join(os.path.dirname(filename), output_filename), "w") as file:
