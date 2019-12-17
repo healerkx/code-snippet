@@ -38,6 +38,7 @@ class Project:
         return sorted(set(reduce(lambda y, x: y + list(x.all_assignees()), self.stages, [])))
 
 def parse_stage(stage):
+    if stage == '': return 4
     for s, n in Stages.items():
         if n[0] == stage: return s
     return 0
@@ -164,6 +165,7 @@ def is_working_day(date, working_dates):
     else: 
         weekday = date.weekday()
         date = date.strftime(Date_Format)
+    if f"~{date}" in working_dates: return False
     if date in working_dates: return True
     if f"w{weekday}" in working_dates: return True
     return False
