@@ -24,9 +24,23 @@ class Objective:
         return self.projects[-1]
 
 class Project:
-    def __init__(self, project_name):
+    def __init__(self, project_info):
+        project_name, project_priv, project_status, project_pm = Project.split(project_info)
         self.project_name = project_name
+        self.project_priv = project_priv
+        self.project_status = project_status
+        self.project_pm = project_pm
         self.stages = []
+
+    @staticmethod
+    def split(project_info):
+        project_info_items = []
+        if "|" in project_info: project_info_items = project_info.split("|")
+        if "," in project_info: project_info_items = project_info.split(",")
+        if len(project_info_items) == 0: project_info_items.append(project_info)
+        while len(project_info_items) < 4:
+            project_info_items.append("")
+        return [p.strip() for p in project_info_items]
 
     def add_stage(self, stage):
         self.stages.append(stage)
@@ -114,7 +128,7 @@ def parse_time_range(time_range_part):
     else: return [time_range_part, time_range_part]
 
 def parse_line(line):
-    r = re.findall(r"(#+)\s*([\s\w~\-_+\(\)!%]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
+    r = re.findall(r"(#+)\s*([|\s\w~\-_+\(\)!%]*)\s*(\[[\w~-]*\])?\s*(@.*)?", line)
     if not r or len(r) == 0: return None
     items = r[0]
     # print(items)
@@ -200,7 +214,9 @@ def create_tab(body, date_begin, date_count, working_dates):
 def create_tab_header(tab, date_begin, date_count, working_dates):
     thead, tr = pq("<thead>"), pq("<tr>")
     tr.append(pq("<td>项目</td>"))
-    tr.append(pq("<td style='min-width:5em'>RD</td>"))
+    tr.append(pq("<td>优先级</td>"))
+    tr.append(pq("<td>状态</td>"))
+    tr.append(pq("<td style='min-width:5em'>DEV&QA</td>"))
     today_str = datetime.datetime.today().strftime(Date_Format)
     for date in dates(date_begin, date_count, working_dates):
         if not is_working_day(date, working_dates):
@@ -257,9 +273,20 @@ def gen_project_view(o, date_begin, date_count, working_dates):
             tr = pq(f"<tr>")
             tbody.append(tr)
             if not has_project_name:
-                proj_td = pq(f"<td>{p.project_name}</td>")
-                proj_td.attr.rowspan = str(len(p.all_assignees()))
+                row_span = str(len(p.all_assignees()))
+                pm_name_part = ""
+                if len(p.project_pm) > 0: pm_name_part = f"<br>({p.project_pm})"
+                proj_td = pq(f"<td>{p.project_name}{pm_name_part}</td>")
+                proj_td.attr.rowspan = row_span
                 tr.append(proj_td)
+                
+                pm_td = pq(f"<td>{p.project_priv}</td>")
+                pm_td.attr.rowspan = row_span
+                tr.append(pm_td)
+
+                stt_td = pq(f"<td>{p.project_status}</td>")
+                stt_td.attr.rowspan = row_span
+                tr.append(stt_td)
                 has_project_name = True
 
             assignee_td = pq(f"<td><span>{assignee}</span></td>")
