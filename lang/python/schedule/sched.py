@@ -5,7 +5,7 @@ from pyquery import PyQuery as pq
 from optparse import OptionParser
 import toml
 
-Config = {}
+Config = toml.load("conf.toml")
 Date_Format = "%Y-%m-%d"
 
 class Objective:
@@ -191,6 +191,13 @@ def set_bgcolor(elem, color):
     elem.attr.style = f"background-color: {Config['colors'][color]}"
     elem.attr['data-highlight-colour'] = color
 
+def tr_append_td(tr, td_html, colspan=1, rowspan=1):
+    td = pq(f"<td>{td_html}</td>")
+    if colspan != 1: td.attr.colspan = str(colspan)
+    if rowspan != 1: td.attr.rowspan = str(rowspan)
+    tr.append(td)
+    return td
+
 def prepare_bootstrap_page():
     page = pq("<html>")
     body = pq("<body>")
@@ -219,9 +226,9 @@ def create_tab_header(tab, date_begin, date_count, working_dates):
             continue
         format_date = date.strftime(Date_Format)
         display = format_date[5:].replace("-", "/")
-        if is_working_day(date, working_dates):
-            if date.weekday() == 0: display += " (Mon)"
-        date_td = tr_append_td(tr, display)
+        if is_working_day(date, working_dates) and date.weekday() == 0:
+            display += " (Mon)"
+        date_td = tr_append_td(tr, display, 1, 1)
         if format_date == today_str:
             set_bgcolor(date_td, "yellow")
 
@@ -239,28 +246,16 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
             # TODO: 一个人的两个Task是不能有交集的, 
             if task.begin_date == dates_list[i]:
                 hit_some_task_begin_date = True
-                date_td = pq(f"<td>")
-
+ 
                 diff = dates_diff(task.begin_date, task.end_date, working_dates) + 1
-                date_td.append(pq(f"<span>{task.task_name}</span>"))
-                date_td.attr.colspan = str(diff)
-                
+                date_td = tr_append_td(tr, task.task_name, diff, 1)
                 set_bgcolor(date_td, stage.stage)
                 date_td.add_class(f"confluenceTd")
-                tr.append(date_td)
                 break
 
         if not hit_some_task_begin_date:
             tr.append(pq(f"<td>"))
         i += diff
-
-
-def tr_append_td(tr, td_html, rowspan="1"):
-    td = pq(f"<td>{td_html}</td>")
-    if rowspan != "1":
-        td.attr.rowspan = rowspan
-    tr.append(td)
-    return td
 
 def gen_project_view(o, date_begin, date_count, working_dates):
     page, body = prepare_bootstrap_page()
@@ -281,11 +276,11 @@ def gen_project_view(o, date_begin, date_count, working_dates):
                 row_span = str(len(p.all_assignees()))
                 pm_name_part = f"<br>({p.project_pm})" if len(p.project_pm) > 0 else ""
 
-                tr_append_td(tr, p.project_name + pm_name_part, row_span)
-                tr_append_td(tr, p.project_priv, row_span)
-                tr_append_td(tr, p.project_status, row_span)
+                tr_append_td(tr, p.project_name + pm_name_part, 1, row_span)
+                tr_append_td(tr, p.project_priv, 1, row_span)
+                tr_append_td(tr, p.project_status, 1, row_span)
 
-            tr_append_td(tr, assignee)
+            tr_append_td(tr, assignee, 1, 1)
 
             stages_and_tasks = my_stages_and_tasks(p, assignee)
             if not stages_and_tasks:
@@ -306,12 +301,9 @@ if __name__ == '__main__':
     parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
     parser.add_option("-w", "--working-dates", action="store", dest="working_dates", help="Provide working dates setting", default="w0,w1,w2,w3,w4")
     parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name")
-    
-    Config = toml.load("conf.toml")
-    
     options, args = parser.parse_args()
-    filename = options.file
 
+    filename = options.file
     o = parse_sched_file(filename) if filename else exit()
     date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(o)
     page = gen_project_view(o, dateutil.parser.parse(date_begin), int(options.date_count), options.working_dates.split(","))
