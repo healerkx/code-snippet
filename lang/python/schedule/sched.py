@@ -8,16 +8,6 @@ import toml
 Config = toml.load("conf.toml")
 Date_Format = "%Y-%m-%d"
 
-class Objective:
-    def __init__(self):
-        self.projects = []
-
-    def add_project(self, project):
-        self.projects.append(project)
-
-    def get_current_project(self):
-        return self.projects[-1]
-
 class Project:
     def __init__(self, project_info):
         project_name, project_priv, project_status, project_pm = Project.split(project_info)
@@ -76,20 +66,20 @@ class Task:
     def __str__(self):
         return f"{self.task_name} {self.begin_date}-{self.end_date}"
 
-def yield_task(o):
-    for p in o.projects:
+def yield_task(projects):
+    for p in projects:
         for s in p.stages:
             for t in s.tasks: yield t
 
-def get_earliest_begin_date(o):
+def get_earliest_begin_date(projects):
     date = "3000-01-01"
-    for t in yield_task(o):
+    for t in yield_task(projects):
         if t.begin_date != '' and date > t.begin_date:
             date = t.begin_date
     return date
 
-def get_latest_end_date(o, date):
-    for t in yield_task(o):
+def get_latest_end_date(projects, date):
+    for t in yield_task(projects):
         if date < t.end_date: date = t.end_date
     return date
 
@@ -139,8 +129,8 @@ def parse_line(line):
 
 #
 def parse_sched_file(sched_file):
+    projects, current_project = [], None
     with open(sched_file) as file:
-        o = Objective()
         for line in file.readlines():
             line = line.strip()
             if not line: continue
@@ -148,20 +138,17 @@ def parse_sched_file(sched_file):
             if not res: continue
             if res[0] == 1:
                 current_project = Project(res[1])
-                o.add_project(current_project)
+                projects.append(current_project)
             if res[0] == 2:
-                current_project = o.get_current_project()
                 current_stage = Stage(res[1])
                 current_project.add_stage(current_stage)
             if res[0] == 3:
-                current_project = o.get_current_project()
                 current_stage = current_project.get_current_stage()
                 task = Task(res[1], regular_date(res[2][0]), regular_date(res[2][1]))
                 for assignee in res[3]:
                     task.add_assignee(assignee)
                 current_stage.add_task(task)
-        return o
-    return None
+    return projects
 
 def my_stages_and_tasks(project, assignee):
     return [(s, copy.copy(t)) for s in project.stages for t in s.tasks if assignee in t.assignees]
@@ -257,15 +244,15 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
             tr.append(pq(f"<td>"))
         i += diff
 
-def gen_project_view(o, date_begin, date_count, working_dates):
+def gen_project_view(projects, date_begin, date_count, working_dates):
     page, body = prepare_bootstrap_page()
     if date_count <= 0:
-        date_count = dates_diff(date_begin, get_latest_end_date(o, date_begin), working_dates) + 1
+        date_count = dates_diff(date_begin, get_latest_end_date(projects, date_begin), working_dates) + 1
 
     _tab, _thead, tbody = create_tab(body, date_begin, date_count, working_dates)
     
     dates_list = [d.strftime(Date_Format) for d in dates(date_begin, date_count, working_dates)]
-    for p in o.projects:
+    for p in projects:
         if p.project_name.startswith('!'): continue
         has_project_name = False
         for assignee in p.all_assignees():
@@ -304,9 +291,9 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     filename = options.file
-    o = parse_sched_file(filename) if filename else exit()
-    date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(o)
-    page = gen_project_view(o, dateutil.parser.parse(date_begin), int(options.date_count), options.working_dates.split(","))
+    projects = parse_sched_file(filename) if filename else exit()
+    date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(projects)
+    page = gen_project_view(projects, dateutil.parser.parse(date_begin), int(options.date_count), options.working_dates.split(","))
 
     output_filename = options.output if options.output else f"{filename}.html"
     with open(os.path.join(os.path.dirname(filename), output_filename), "w") as file:
