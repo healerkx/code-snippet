@@ -258,6 +258,14 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
             tr.append(pq(f"<td>"))
         i += diff
 
+
+def tr_append_td(tr, td_html, rowspan="1"):
+    td = pq(td_html)
+    if rowspan != "1":
+        td.attr.rowspan = rowspan
+    tr.append(td)
+    return td
+
 def gen_project_view(o, date_begin, date_count, working_dates):
     page, body = prepare_bootstrap_page()
     if date_count <= 0:
@@ -274,19 +282,12 @@ def gen_project_view(o, date_begin, date_count, working_dates):
             tbody.append(tr)
             if not has_project_name:
                 row_span = str(len(p.all_assignees()))
-                pm_name_part = ""
-                if len(p.project_pm) > 0: pm_name_part = f"<br>({p.project_pm})"
-                proj_td = pq(f"<td>{p.project_name}{pm_name_part}</td>")
-                proj_td.attr.rowspan = row_span
-                tr.append(proj_td)
-                
-                pm_td = pq(f"<td>{p.project_priv}</td>")
-                pm_td.attr.rowspan = row_span
-                tr.append(pm_td)
+                pm_name_part = f"<br>({p.project_pm})" if len(p.project_pm) > 0 else ""
 
-                stt_td = pq(f"<td>{p.project_status}</td>")
-                stt_td.attr.rowspan = row_span
-                tr.append(stt_td)
+                tr_append_td(tr, f"<td>{p.project_name}{pm_name_part}</td>", row_span)
+                tr_append_td(tr, f"<td>{p.project_priv}</td>", row_span)
+                tr_append_td(tr, f"<td>{p.project_status}</td>", row_span)
+
                 has_project_name = True
 
             assignee_td = pq(f"<td><span>{assignee}</span></td>")
