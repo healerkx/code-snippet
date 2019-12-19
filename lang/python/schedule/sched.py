@@ -3,15 +3,10 @@ import datetime, re, os, sys, copy, dateutil.parser
 from functools import reduce
 from pyquery import PyQuery as pq
 from optparse import OptionParser
+import toml
 
+Config = {}
 Date_Format = "%Y-%m-%d"
-
-Stages = { 
-    1: ("设计", "#deebff", "blue"),
-    2: ("开发", "#e3fcef", "green"),
-    3: ("联调", "#fffae5", "yellow"),
-    4: ("测试", "#f4f5f7", "grey"),
-    5: ("上线", "#ffebe5", "red")}
 
 class Objective:
     def __init__(self):
@@ -53,9 +48,8 @@ class Project:
 
 def parse_stage(stage):
     if stage == '': return 4
-    for s, n in Stages.items():
-        if n[0] == stage: return s
-    return 0
+    if stage in Config['stages']:
+        return Config['stages'][stage]
 
 class Stage:
     def __init__(self, stage_name):
@@ -193,7 +187,9 @@ def dates_diff(begin, end, working_dates):
         b += datetime.timedelta(1)
     return count
 
-def set_bgcolor(elem, color): elem.attr.style = f"background-color: {color}"
+def set_bgcolor(elem, color): 
+    elem.attr.style = f"background-color: {Config['colors'][color]}"
+    elem.attr['data-highlight-colour'] = color
 
 def prepare_bootstrap_page():
     page = pq("<html>")
@@ -225,9 +221,10 @@ def create_tab_header(tab, date_begin, date_count, working_dates):
         display = format_date[5:].replace("-", "/")
         if is_working_day(date, working_dates):
             if date.weekday() == 0: display += " (Mon)"
-        date_td = pq(f"<td><span>{display}</span></td>")
-        if format_date == today_str: set_bgcolor(date_td, "yellow")
-        tr.append(date_td)
+        date_td = tr_append_td(tr, display)
+        if format_date == today_str:
+            set_bgcolor(date_td, "yellow")
+
     thead.append(tr)
     tab.append(thead)
     return thead
@@ -247,9 +244,8 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
                 diff = dates_diff(task.begin_date, task.end_date, working_dates) + 1
                 date_td.append(pq(f"<span>{task.task_name}</span>"))
                 date_td.attr.colspan = str(diff)
-
-                date_td.attr.style = f"background-color:{Stages[stage.stage][1]}"
-                date_td.attr['data-highlight-colour'] = Stages[stage.stage][2]
+                
+                set_bgcolor(date_td, stage.stage)
                 date_td.add_class(f"confluenceTd")
                 tr.append(date_td)
                 break
@@ -260,7 +256,7 @@ def gen_project_view_task_line(tr, stages_and_tasks, dates_list, working_dates):
 
 
 def tr_append_td(tr, td_html, rowspan="1"):
-    td = pq(td_html)
+    td = pq(f"<td>{td_html}</td>")
     if rowspan != "1":
         td.attr.rowspan = rowspan
     tr.append(td)
@@ -281,17 +277,15 @@ def gen_project_view(o, date_begin, date_count, working_dates):
             tr = pq(f"<tr>")
             tbody.append(tr)
             if not has_project_name:
+                has_project_name = True
                 row_span = str(len(p.all_assignees()))
                 pm_name_part = f"<br>({p.project_pm})" if len(p.project_pm) > 0 else ""
 
-                tr_append_td(tr, f"<td>{p.project_name}{pm_name_part}</td>", row_span)
-                tr_append_td(tr, f"<td>{p.project_priv}</td>", row_span)
-                tr_append_td(tr, f"<td>{p.project_status}</td>", row_span)
+                tr_append_td(tr, p.project_name + pm_name_part, row_span)
+                tr_append_td(tr, p.project_priv, row_span)
+                tr_append_td(tr, p.project_status, row_span)
 
-                has_project_name = True
-
-            assignee_td = pq(f"<td><span>{assignee}</span></td>")
-            tr.append(assignee_td)
+            tr_append_td(tr, assignee)
 
             stages_and_tasks = my_stages_and_tasks(p, assignee)
             if not stages_and_tasks:
@@ -312,6 +306,8 @@ if __name__ == '__main__':
     parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
     parser.add_option("-w", "--working-dates", action="store", dest="working_dates", help="Provide working dates setting", default="w0,w1,w2,w3,w4")
     parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name")
+    
+    Config = toml.load("conf.toml")
     
     options, args = parser.parse_args()
     filename = options.file

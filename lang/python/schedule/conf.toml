@@ -1,0 +1,11 @@
+
+
+colors = { "blue" = "#deebff", "green" = "#e3fcef", "yellow" = "#fffae5", "grey" = "#f4f5f7", "red" = "#ffebe5" }
+
+stages = { "设计"="blue", "开发"="green", "联调"="yellow", "测试"="grey", "上线"="red" }
+
+
+workday = []
+
+holiday = []
+
