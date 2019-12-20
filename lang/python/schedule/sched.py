@@ -288,10 +288,14 @@ if __name__ == '__main__':
     parser.add_option("-c", "--date-count", action="store", dest="date_count", help="Provide view date count", default=30)
     parser.add_option("-w", "--working-dates", action="store", dest="working_dates", help="Provide working dates setting", default="w0,w1,w2,w3,w4")
     parser.add_option("-o", "--output-file", action="store", dest="output", help="Provide output file name")
+    parser.add_option("-p", "--project-name", action="store", dest="project_name", help="Provide project name", default=None)
     options, args = parser.parse_args()
 
     filename = options.file
     projects = parse_sched_file(filename) if filename else exit()
+    if options.project_name:
+        projects_given = list(map(lambda x: x.strip(), options.project_name.split(',')))
+        projects = list(filter(lambda x: x.project_name in projects_given, projects))
     date_begin = options.date_begin if options.date_begin else get_earliest_begin_date(projects)
     page = gen_project_view(projects, dateutil.parser.parse(date_begin), int(options.date_count), options.working_dates.split(","))
 
