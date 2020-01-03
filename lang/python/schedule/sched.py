@@ -36,11 +36,6 @@ class Project:
     def all_assignees(self):
         return sorted(set(reduce(lambda y, x: y + list(x.all_assignees()), self.stages, [])))
 
-def parse_stage(stage):
-    if stage == '': return 4
-    if stage in Config['stages']:
-        return Config['stages'][stage]
-
 class Stage:
     def __init__(self, stage_name):
         self.stage_name = stage_name
@@ -65,6 +60,11 @@ class Task:
 
     def __str__(self):
         return f"{self.task_name} {self.begin_date}-{self.end_date}"
+
+def parse_stage(stage):
+    if stage == '': return 4
+    if stage in Config['stages']:
+        return Config['stages'][stage]
 
 def yield_task(projects):
     for p in projects:
@@ -99,8 +99,8 @@ def parse_date(date):
     date = date.strip()
     ps = date.split("-")
     if len(ps) == 3: return date
-    elif len(ps) == 2: return f"{datetime.datetime.now().year}-{date}"
-    else: return f"{datetime.datetime.now().year}-{datetime.datetime.now().month}-{date}"
+    elif len(ps) == 2: return f"{Config['thisYear']}-{date}"
+    else: return f"{Config['thisYear']}-{datetime.datetime.now().month}-{date}"
 
 def parse_assignees(assignees_part):
     r = re.findall(r"(\w+)", assignees_part)
@@ -168,6 +168,8 @@ def dates(date_begin=None, date_count=14, working_dates=['w0', 'w1', 'w2', 'w3',
     
 def dates_diff(begin, end, working_dates):
     b, e = dateutil.parser.parse(begin), dateutil.parser.parse(end)
+    if e < b:
+        raise "BadArguments"
     count = 0
     while b != e:
         count += is_working_day(b, working_dates)
